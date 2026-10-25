@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { getSites } from '@/api/sites'
+import { useSitesQuery } from '@/hooks/useSites'
+import { useAuth } from '@/hooks/useAuth'
 
 const SITE_STORAGE_KEY = 'cms_selected_site_id'
 
@@ -14,6 +14,7 @@ const SiteContext = createContext({
 })
 
 export function SiteProvider({ children }) {
+  const { isAuthenticated } = useAuth()
   const [explicitSiteId, setExplicitSiteId] = useState(() => {
     try {
       return localStorage.getItem(SITE_STORAGE_KEY) || null
@@ -28,12 +29,7 @@ export function SiteProvider({ children }) {
     isError,
     error,
     refetch,
-  } = useQuery({
-    queryKey: ['sites'],
-    queryFn: getSites,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 1,
-  })
+  } = useSitesQuery({ enabled: isAuthenticated })
 
   // Derive activeSiteId without synchronous setState in effect
   const selectedSiteId =

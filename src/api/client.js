@@ -31,7 +31,7 @@ export function setStoredToken(token) {
       localStorage.removeItem(TOKEN_KEY)
     }
   } catch {
-    // Storage access issue
+    // Storage access failure
   }
 }
 
@@ -40,11 +40,11 @@ export function clearStoredToken() {
   try {
     localStorage.removeItem(TOKEN_KEY)
   } catch {
-    // Storage access issue
+    // Storage access failure
   }
 }
 
-// Clean and validate base URL from environment
+// Clean and validate base URL from environment variable
 const rawBaseUrl = import.meta.env.VITE_BASE_URL?.trim() || 'https://hiring-dev.internal.kloudspot.com/api'
 const baseURL = rawBaseUrl.replace(/["']/g, '').replace(/\/+$/, '')
 
@@ -52,6 +52,7 @@ export const apiClient = axios.create({
   baseURL,
   headers: {
     'Content-Type': 'application/json',
+    Accept: 'application/json',
   },
   timeout: 15000,
 })
@@ -61,30 +62,49 @@ apiClient.interceptors.request.use(
   (config) => {
     const token = getStoredToken()
     if (token) {
-      // Ensure clean 'Bearer <token>' format without duplicate prefix
-      const authHeader = token.startsWith('Bearer ') ? token : `Bearer ${token}`
-      config.headers.Authorization = authHeader
+      const cleanToken = token.startsWith('Bearer ') ? token.slice(7).trim() : token.trim()
+      config.headers.Authorization = `Bearer ${cleanToken}`
     }
     return config
   },
   (error) => Promise.reject(error)
 )
 
-// Intercept responses to normalize errors
+// Intercept responses for predictable, normalized error objects
 apiClient.interceptors.response.use(
   (response) => response.data,
   (error) => {
+    // Ignore aborted requests without triggering auth eviction
+    if (axios.isCancel(error)) {
+      return Promise.reject({
+        isCancelled: true,
+        message: 'Request was cancelled',
+      })
+    }
+
     const status = error.response?.status
     const data = error.response?.data
+    const isNetworkError = !error.response && Boolean(error.request)
 
-    // Normalize error message from backend
-    const message =
-      data?.errorMessage ||
-      data?.message ||
-      (status === 401 ? 'Authentication required or session expired' : error.message)
+    // Normalize user-safe error message
+    let message = 'An unexpected network error occurred. Please check your connection.'
+    if (data?.errorMessage) {
+      message = data.errorMessage
+    } else if (data?.message) {
+      message = data.message
+    } else if (status === 401) {
+      message = 'Authentication required or session expired.'
+    } else if (status === 403) {
+      message = 'You do not have permission to perform this action.'
+    } else if (status === 404) {
+      message = 'Requested resource not found.'
+    } else if (status >= 500) {
+      message = 'The server encountered an error processing your request.'
+    } else if (error.message) {
+      message = error.message
+    }
 
     if (status === 401) {
-      // Discard invalid token if server rejects it
       clearStoredToken()
       unauthorizedListeners.forEach((fn) => {
         try {
@@ -99,7 +119,9 @@ apiClient.interceptors.response.use(
       status,
       message,
       data,
-      originalError: error,
+      isNetworkError,
+      isAuthError: status === 401 || status === 403,
+      isClientError: typeof status === 'number' && status >= 400 && status < 500,
     })
   }
 )

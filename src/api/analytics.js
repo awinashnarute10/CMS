@@ -1,27 +1,106 @@
 import { apiClient } from './client'
 
-export async function getFootfall({ siteId, fromUtc, toUtc }) {
-  return apiClient.post('/analytics/footfall', { siteId, fromUtc, toUtc })
+/**
+ * Get average dwell duration (minutes) for a site within a period.
+ * POST /api/analytics/dwell
+ * @param {Object} params - { siteId, fromUtc, toUtc }
+ * @param {Object} [options] - Optional axios config (e.g. AbortSignal)
+ */
+export async function getAverageDwell({ siteId, fromUtc, toUtc }, options = {}) {
+  return apiClient.post(
+    '/analytics/dwell',
+    { siteId, fromUtc, toUtc },
+    { signal: options.signal }
+  )
 }
 
-export async function getDwell({ siteId, fromUtc, toUtc }) {
-  return apiClient.post('/analytics/dwell', { siteId, fromUtc, toUtc })
+export const getAverageDwellTime = getAverageDwell
+export const getDwell = getAverageDwell
+
+/**
+ * Count total number of entries during a period (NOT unique visitors).
+ * POST /api/analytics/footfall
+ * @param {Object} params - { siteId, fromUtc, toUtc }
+ * @param {Object} [options] - Optional axios config
+ */
+export async function getFootfall({ siteId, fromUtc, toUtc }, options = {}) {
+  return apiClient.post(
+    '/analytics/footfall',
+    { siteId, fromUtc, toUtc },
+    { signal: options.signal }
+  )
 }
 
-export async function getOccupancy({ siteId, fromUtc, toUtc }) {
-  return apiClient.post('/analytics/occupancy', { siteId, fromUtc, toUtc })
+/**
+ * Helper to get today's footfall (from UTC midnight to current moment).
+ * POST /api/analytics/footfall
+ * @param {Object} params - { siteId }
+ * @param {Object} [options] - Optional axios config
+ */
+export async function getTodaysFootfall({ siteId }, options = {}) {
+  const now = new Date()
+  const startOfDayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)
+  return getFootfall(
+    {
+      siteId,
+      fromUtc: startOfDayUtc,
+      toUtc: now.getTime(),
+    },
+    options
+  )
 }
 
-export async function getDemographics({ siteId, fromUtc, toUtc }) {
-  return apiClient.post('/analytics/demographics', { siteId, fromUtc, toUtc })
+/**
+ * Get hourly occupancy analytics for a site.
+ * POST /api/analytics/occupancy
+ * @param {Object} params - { siteId, fromUtc, toUtc }
+ * @param {Object} [options] - Optional axios config
+ */
+export async function getOccupancyTimeSeries({ siteId, fromUtc, toUtc }, options = {}) {
+  return apiClient.post(
+    '/analytics/occupancy',
+    { siteId, fromUtc, toUtc },
+    { signal: options.signal }
+  )
 }
 
-export async function getEntryExit({ siteId, fromUtc, toUtc, pageSize = 50, pageNumber = 1 }) {
-  return apiClient.post('/analytics/entry-exit', {
-    siteId,
-    fromUtc,
-    toUtc,
-    pageSize,
-    pageNumber,
-  })
+export const getOccupancy = getOccupancyTimeSeries
+
+/**
+ * Get hourly gender demographics analytics for a site.
+ * POST /api/analytics/demographics
+ * @param {Object} params - { siteId, fromUtc, toUtc }
+ * @param {Object} [options] - Optional axios config
+ */
+export async function getDemographics({ siteId, fromUtc, toUtc }, options = {}) {
+  return apiClient.post(
+    '/analytics/demographics',
+    { siteId, fromUtc, toUtc },
+    { signal: options.signal }
+  )
 }
+
+/**
+ * Get combined entry–exit session history for a site (paginated).
+ * POST /api/analytics/entry-exit
+ * @param {Object} params - { siteId, fromUtc, toUtc, pageSize, pageNumber }
+ * @param {Object} [options] - Optional axios config
+ */
+export async function getEntryExitRecords(
+  { siteId, fromUtc, toUtc, pageSize = 50, pageNumber = 1 },
+  options = {}
+) {
+  return apiClient.post(
+    '/analytics/entry-exit',
+    {
+      siteId,
+      fromUtc,
+      toUtc,
+      pageSize,
+      pageNumber,
+    },
+    { signal: options.signal }
+  )
+}
+
+export const getEntryExit = getEntryExitRecords

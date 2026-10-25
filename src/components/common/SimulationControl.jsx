@@ -2,29 +2,29 @@ import { useState } from 'react'
 import { Play, Square, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { startSimulation, stopSimulation } from '@/api/simulation'
+import { useStartSimulation, useStopSimulation } from '@/hooks/useSimulation'
 import { cn } from '@/lib/utils'
 
 export function SimulationControl({ className }) {
   const [isRunning, setIsRunning] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const startSim = useStartSimulation()
+  const stopSim = useStopSimulation()
+
+  const loading = startSim.isPending || stopSim.isPending
 
   const handleToggle = async () => {
-    setLoading(true)
     try {
       if (isRunning) {
-        await stopSimulation()
+        await stopSim.mutateAsync()
         setIsRunning(false)
         toast.info('Occupancy simulation stopped')
       } else {
-        await startSimulation()
+        await startSim.mutateAsync()
         setIsRunning(true)
         toast.success('Live occupancy simulation started (1000 synthetic visitors)')
       }
     } catch (err) {
       toast.error(err.message || 'Simulation command failed')
-    } finally {
-      setLoading(false)
     }
   }
 
