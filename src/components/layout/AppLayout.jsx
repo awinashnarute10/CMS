@@ -2,15 +2,17 @@ import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { AppSidebar } from './AppSidebar'
 import { AppHeader } from './AppHeader'
+import { useSocket } from '@/hooks/useSocket'
+import { useAuth } from '@/hooks/useAuth'
 
 export function AppLayout({
   activeSiteName = null,
-  user = null,
-  connectionStatus = null,
   children,
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
+  const { status: connectionStatus } = useSocket()
+  const { user } = useAuth()
 
   const getPageTitle = () => {
     if (location.pathname.startsWith('/crowd-entries')) {

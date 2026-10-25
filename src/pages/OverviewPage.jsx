@@ -12,6 +12,7 @@ import { OccupancyTimeChart } from '@/components/charts/OccupancyTimeChart'
 import { DemographicsTrendChart } from '@/components/charts/DemographicsTrendChart'
 import { DemographicsBreakdownChart } from '@/components/charts/DemographicsBreakdownChart'
 import { useSite } from '@/context/SiteContext'
+import { useSocket } from '@/hooks/useSocket'
 import {
   useOccupancyQuery,
   useTodaysFootfallQuery,
@@ -32,6 +33,7 @@ function extractSeries(response) {
 
 export function OverviewPage() {
   const { selectedSite, selectedSiteId, isLoading: isLoadingSite, realtimeOccupancy } = useSite()
+  const { alerts, status: socketStatus, dismissAlert, clearAlerts } = useSocket()
   const [timePreset, setTimePreset] = useState('24h')
 
   const { fromUtc, toUtc } = useMemo(
@@ -218,8 +220,11 @@ export function OverviewPage() {
         </ChartCard>
 
         <AlertFeedCard
-          alerts={[]}
-          title="Active Security Alerts"
+          alerts={alerts}
+          status={socketStatus}
+          onDismiss={dismissAlert}
+          onClear={clearAlerts}
+          title="Live Security Alerts"
         />
       </div>
 
