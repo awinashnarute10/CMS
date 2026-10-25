@@ -92,6 +92,8 @@ apiClient.interceptors.response.use(
       message = data.errorMessage
     } else if (data?.message) {
       message = data.message
+    } else if (isNetworkError) {
+      message = 'An unexpected network error occurred. Please check your connection.'
     } else if (status === 401) {
       message = 'Authentication required or session expired.'
     } else if (status === 403) {
