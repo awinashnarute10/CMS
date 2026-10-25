@@ -1,5 +1,9 @@
 import { apiClient } from './client'
-import { generateFixtureOccupancy, generateFixtureDemographics } from './fixtures'
+import {
+  generateFixtureOccupancy,
+  generateFixtureDemographics,
+  generateFixtureEntryExitRecords,
+} from './fixtures'
 
 /**
  * Get average dwell duration (minutes) for a site within a period.
@@ -114,6 +118,9 @@ export async function getEntryExitRecords(
   { siteId, fromUtc, toUtc, pageSize = 50, pageNumber = 1 },
   options = {}
 ) {
+  if (import.meta.env.VITE_USE_FIXTURES === 'true') {
+    return generateFixtureEntryExitRecords({ siteId, fromUtc, toUtc, pageSize, pageNumber })
+  }
   return apiClient.post(
     '/analytics/entry-exit',
     {

@@ -45,7 +45,6 @@ export function generateFixtureOccupancy(fromUtc, toUtc) {
   while (current <= end) {
     const d = new Date(current)
     const hour = d.getUTCHours()
-    // Realistic curve: higher during working hours 9-18
     const base = hour >= 9 && hour <= 18 ? 120 + ((seed * 17) % 80) : 15 + ((seed * 7) % 25)
     seed = (seed * 31 + 13) % 100
 
@@ -88,4 +87,68 @@ export function generateFixtureDemographics(fromUtc, toUtc) {
     current += step
   }
   return buckets
+}
+
+export function generateFixtureEntryExitRecords({ siteId, toUtc, pageSize = 50, pageNumber = 1 }) {
+  const totalRecords = 185
+  const totalPages = Math.ceil(totalRecords / pageSize)
+  const names = [
+    { name: 'Dr. Michael Vance', gender: 'male' },
+    { name: 'Sarah Jenkins', gender: 'female' },
+    { name: 'David Kumar', gender: 'male' },
+    { name: 'Elena Rostova', gender: 'female' },
+    { name: 'Marcus Chen', gender: 'male' },
+    { name: 'Amara Okafor', gender: 'female' },
+    { name: 'Liam O\'Connor', gender: 'male' },
+    { name: 'Yuki Tanaka', gender: 'female' },
+    { name: 'Alexander Wright', gender: 'male' },
+    { name: 'Chloe Dubois', gender: 'female' },
+  ]
+  const zones = [
+    { zoneId: 'zone-lobby', zoneName: 'Main Reception & Lobby', severity: 'low' },
+    { zoneId: 'zone-hall-a', zoneName: 'Exhibition Hall A', severity: 'medium' },
+    { zoneId: 'zone-server', zoneName: 'Secure Datacenter Wing', severity: 'high' },
+    { zoneId: 'zone-cafeteria', zoneName: 'Central Food Court', severity: 'low' },
+  ]
+
+  const startIndex = (pageNumber - 1) * pageSize
+  const records = []
+  const baseTime = toUtc || Date.now()
+
+  for (let i = 0; i < pageSize && startIndex + i < totalRecords; i++) {
+    const recordIndex = startIndex + i
+    const person = names[recordIndex % names.length]
+    const zone = zones[recordIndex % zones.length]
+    const entryOffset = (recordIndex * 7 + 5) * 60 * 1000
+    const entryUtc = baseTime - entryOffset
+    const hasExited = recordIndex % 5 !== 0
+    const dwellMinutes = hasExited ? 15 + ((recordIndex * 13) % 75) : null
+    const exitUtc = hasExited ? entryUtc + dwellMinutes * 60 * 1000 : null
+
+    const entryD = new Date(entryUtc)
+    const exitD = exitUtc ? new Date(exitUtc) : null
+
+    records.push({
+      personId: `PER-${String(1000 + recordIndex)}`,
+      personName: person.name,
+      gender: person.gender,
+      zoneId: zone.zoneId,
+      zoneName: zone.zoneName,
+      severity: zone.severity,
+      entryUtc,
+      entryLocal: entryD.toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' }),
+      exitUtc,
+      exitLocal: exitD ? exitD.toLocaleString([], { dateStyle: 'short', timeStyle: 'medium' }) : null,
+      dwellMinutes,
+    })
+  }
+
+  return {
+    siteId,
+    totalRecords,
+    totalPages,
+    pageNumber,
+    pageSize,
+    records,
+  }
 }

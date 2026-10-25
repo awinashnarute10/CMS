@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import {
   getFootfall,
   getDwell,
@@ -117,5 +117,6 @@ export function useEntryExitQuery({
       ),
     enabled: isEnabled,
     staleTime: 1000 * 15,
+    placeholderData: keepPreviousData,
   })
 }
