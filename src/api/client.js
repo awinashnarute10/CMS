@@ -1,16 +1,29 @@
 import axios from 'axios'
 
 const TOKEN_KEY = 'cms_access_token'
+let inMemoryToken = null
+let unauthorizedListeners = []
+
+export function subscribeUnauthorized(listener) {
+  unauthorizedListeners.push(listener)
+  return () => {
+    unauthorizedListeners = unauthorizedListeners.filter((l) => l !== listener)
+  }
+}
 
 export function getStoredToken() {
+  if (inMemoryToken) return inMemoryToken
   try {
-    return localStorage.getItem(TOKEN_KEY) || null
+    const saved = localStorage.getItem(TOKEN_KEY) || null
+    inMemoryToken = saved
+    return saved
   } catch {
     return null
   }
 }
 
 export function setStoredToken(token) {
+  inMemoryToken = token
   try {
     if (token) {
       localStorage.setItem(TOKEN_KEY, token)
@@ -23,6 +36,7 @@ export function setStoredToken(token) {
 }
 
 export function clearStoredToken() {
+  inMemoryToken = null
   try {
     localStorage.removeItem(TOKEN_KEY)
   } catch {
@@ -42,12 +56,14 @@ export const apiClient = axios.create({
   timeout: 15000,
 })
 
-// Attach Bearer token to all requests if present
+// Attach Bearer token to all outgoing REST requests
 apiClient.interceptors.request.use(
   (config) => {
     const token = getStoredToken()
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+      // Ensure clean 'Bearer <token>' format without duplicate prefix
+      const authHeader = token.startsWith('Bearer ') ? token : `Bearer ${token}`
+      config.headers.Authorization = authHeader
     }
     return config
   },
@@ -70,6 +86,13 @@ apiClient.interceptors.response.use(
     if (status === 401) {
       // Discard invalid token if server rejects it
       clearStoredToken()
+      unauthorizedListeners.forEach((fn) => {
+        try {
+          fn()
+        } catch {
+          // ignore callback error
+        }
+      })
     }
 
     return Promise.reject({

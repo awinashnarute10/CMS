@@ -1,4 +1,6 @@
-import { User, Shield, LogOut, Settings } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { User, Shield, LogOut, Settings, LogIn } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -13,21 +15,37 @@ export function UserMenu({
   user = null,
   onLogout,
 }) {
-  if (!user) {
+  const auth = useAuth()
+  const navigate = useNavigate()
+
+  const currentUser = user || auth.user
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout()
+    } else {
+      auth.logout()
+      navigate('/login')
+    }
+  }
+
+  if (!currentUser) {
     return (
       <Button
-        variant="ghost"
-        size="icon"
-        className="h-8 w-8 rounded-md text-muted-foreground hover:text-foreground"
-        aria-label="Account menu"
+        variant="outline"
+        size="sm"
+        onClick={() => navigate('/login')}
+        className="h-8 text-xs font-medium gap-1.5 border-border"
+        aria-label="Sign in"
       >
-        <User className="h-4 w-4" />
+        <LogIn className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Sign In</span>
       </Button>
     )
   }
 
-  const initials = user.name
-    ? user.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+  const initials = currentUser.name
+    ? currentUser.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
     : 'U'
 
   return (
@@ -42,9 +60,9 @@ export function UserMenu({
             {initials}
           </div>
           <div className="hidden md:flex flex-col text-left leading-none">
-            <span className="text-xs font-medium text-foreground">{user.name}</span>
-            {user.role && (
-              <span className="text-[11px] text-muted-foreground mt-0.5">{user.role}</span>
+            <span className="text-xs font-medium text-foreground">{currentUser.name}</span>
+            {currentUser.role && (
+              <span className="text-[11px] text-muted-foreground mt-0.5">{currentUser.role}</span>
             )}
           </div>
         </Button>
@@ -52,14 +70,14 @@ export function UserMenu({
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none text-foreground">{user.name}</p>
-            {user.email && (
-              <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+            <p className="text-sm font-medium leading-none text-foreground">{currentUser.name}</p>
+            {currentUser.email && (
+              <p className="text-xs leading-none text-muted-foreground">{currentUser.email}</p>
             )}
-            {user.role && (
+            {currentUser.role && (
               <div className="flex items-center gap-1 mt-1 text-[11px] text-primary font-medium">
                 <Shield className="h-3 w-3" />
-                <span>{user.role}</span>
+                <span>{currentUser.role}</span>
               </div>
             )}
           </div>
@@ -75,8 +93,8 @@ export function UserMenu({
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onClick={onLogout}
-          className="cursor-pointer gap-2 text-destructive focus:text-destructive focus:bg-destructive/10"
+          onClick={handleLogout}
+          className="cursor-pointer gap-2 text-[var(--status-danger)] focus:text-[var(--status-danger)] focus:bg-[var(--status-danger-bg)]"
         >
           <LogOut className="h-4 w-4" />
           <span>Sign out</span>
