@@ -1,3 +1,4 @@
+import { useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Users, Radio, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -5,23 +6,26 @@ import { Button } from '@/components/ui/button'
 const NAV_ITEMS = [
   {
     id: 'overview',
+    path: '/overview',
     label: 'Overview',
     icon: LayoutDashboard,
   },
   {
     id: 'crowd-entries',
+    path: '/crowd-entries',
     label: 'Crowd Entries',
     icon: Users,
   },
 ]
 
 export function AppSidebar({
-  activeTab = 'overview',
-  onSelectTab,
   mobileOpen = false,
   onCloseMobile,
   className,
 }) {
+  const location = useLocation()
+  const navigate = useNavigate()
+
   return (
     <>
       {/* Mobile Backdrop */}
@@ -77,13 +81,15 @@ export function AppSidebar({
           </div>
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon
-            const isActive = activeTab === item.id
+            const isActive =
+              location.pathname === item.path ||
+              (item.id === 'overview' && location.pathname === '/')
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => {
-                  onSelectTab?.(item.id)
+                  navigate(item.path)
                   onCloseMobile?.()
                 }}
                 className={cn(

@@ -1,18 +1,20 @@
-import { Menu, MapPin } from 'lucide-react'
+import { Menu } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SiteSelector } from '@/components/common/SiteSelector'
+import { SimulationControl } from '@/components/common/SimulationControl'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { UserMenu } from '@/components/common/UserMenu'
 import { StatusBadge } from '@/components/common/StatusBadge'
 
 export function AppHeader({
   title = 'Crowd Management',
-  activeSiteName = null,
   onOpenMobileNav,
   user = null,
   connectionStatus = null,
 }) {
   return (
     <header className="h-14 border-b border-border bg-card px-4 md:px-6 flex items-center justify-between gap-4 sticky top-0 z-30">
+      {/* Left: Mobile Toggle & Title */}
       <div className="flex items-center gap-3">
         <Button
           variant="outline"
@@ -23,30 +25,28 @@ export function AppHeader({
         >
           <Menu className="h-4 w-4" />
         </Button>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold tracking-tight text-foreground">
-            {title}
-          </span>
-          {activeSiteName && (
-            <>
-              <span className="hidden sm:inline text-muted-foreground">/</span>
-              <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                <MapPin className="h-3.5 w-3.5 text-primary" />
-                <span className="truncate max-w-[200px]">{activeSiteName}</span>
-              </div>
-            </>
-          )}
-        </div>
+        <span className="text-sm font-semibold tracking-tight text-foreground hidden sm:inline">
+          {title}
+        </span>
       </div>
 
+      {/* Center: Global Site Selector */}
+      <div className="flex-1 max-w-xs md:max-w-sm">
+        <SiteSelector />
+      </div>
+
+      {/* Right: Simulation Controls, Theme, User */}
       <div className="flex items-center gap-2.5">
+        <SimulationControl className="hidden sm:flex" />
+
         {connectionStatus && (
           <StatusBadge
             status={connectionStatus === 'connected' ? 'success' : 'neutral'}
-            label={connectionStatus === 'connected' ? 'Connected' : 'Disconnected'}
+            label={connectionStatus === 'connected' ? 'Live' : 'Offline'}
             className="hidden lg:inline-flex"
           />
         )}
+
         <ThemeToggle />
         <UserMenu user={user} />
       </div>

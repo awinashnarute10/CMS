@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 
 export function KpiCard({
@@ -8,6 +9,7 @@ export function KpiCard({
   subtitle,
   badge,
   icon: Icon,
+  isLoading = false,
   className,
 }) {
   return (
@@ -24,26 +26,35 @@ export function KpiCard({
           )}
         </div>
 
-        <div className="mt-3 flex items-baseline gap-1.5">
-          <span className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground tabular-nums">
-            {value}
-          </span>
-          {unit && (
-            <span className="text-xs text-muted-foreground font-medium">
-              {unit}
-            </span>
-          )}
-        </div>
-
-        {(subtitle || badge) && (
-          <div className="mt-3 flex items-center gap-2 text-xs">
-            {badge}
-            {subtitle && (
-              <span className="text-muted-foreground">
-                {subtitle}
-              </span>
-            )}
+        {isLoading ? (
+          <div className="mt-3 space-y-2">
+            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-4 w-32" />
           </div>
+        ) : (
+          <>
+            <div className="mt-3 flex items-baseline gap-1.5">
+              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground tabular-nums">
+                {value ?? '—'}
+              </span>
+              {unit && (
+                <span className="text-xs text-muted-foreground font-medium">
+                  {unit}
+                </span>
+              )}
+            </div>
+
+            {(subtitle || badge) && (
+              <div className="mt-3 flex items-center gap-2 text-xs">
+                {badge}
+                {subtitle && (
+                  <span className="text-muted-foreground">
+                    {subtitle}
+                  </span>
+                )}
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

@@ -1,21 +1,28 @@
 import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { AppSidebar } from './AppSidebar'
 import { AppHeader } from './AppHeader'
 
 export function AppLayout({
-  activeTab = 'overview',
-  onSelectTab,
-  activeSiteName,
+  activeSiteName = null,
+  user = null,
+  connectionStatus = null,
   children,
 }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const location = useLocation()
+
+  const getPageTitle = () => {
+    if (location.pathname.startsWith('/crowd-entries')) {
+      return 'Crowd Entries Log'
+    }
+    return 'Overview Dashboard'
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground flex">
       {/* Sidebar */}
       <AppSidebar
-        activeTab={activeTab}
-        onSelectTab={onSelectTab}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
       />
@@ -23,8 +30,10 @@ export function AppLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         <AppHeader
-          title={activeTab === 'overview' ? 'Overview Dashboard' : 'Crowd Entries Log'}
+          title={getPageTitle()}
           activeSiteName={activeSiteName}
+          user={user}
+          connectionStatus={connectionStatus}
           onOpenMobileNav={() => setMobileOpen(true)}
         />
         <main className="flex-1 overflow-y-auto">
