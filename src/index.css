@@ -84,6 +84,8 @@
     --chart-slate: #546E7A;
     --chart-teal: #00897B;
     --chart-amber: #D97706;
+    --chart-male: #2563EB;
+    --chart-female: #DB2777;
   }
 
   .dark {
@@ -127,6 +129,8 @@
     --chart-slate: #94A3B8;
     --chart-teal: #2DD4BF;
     --chart-amber: #FBBF24;
+    --chart-male: #60A5FA;
+    --chart-female: #F472B6;
   }
 }
 

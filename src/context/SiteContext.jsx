@@ -15,6 +15,7 @@ const SiteContext = createContext({
 
 export function SiteProvider({ children }) {
   const { isAuthenticated } = useAuth()
+  const [realtimeOccupancy, setRealtimeOccupancy] = useState(null)
   const [explicitSiteId, setExplicitSiteId] = useState(() => {
     try {
       return localStorage.getItem(SITE_STORAGE_KEY) || null
@@ -39,6 +40,7 @@ export function SiteProvider({ children }) {
 
   const handleSelectSite = (siteId) => {
     setExplicitSiteId(siteId)
+    setRealtimeOccupancy(null)
     try {
       localStorage.setItem(SITE_STORAGE_KEY, siteId)
     } catch {
@@ -59,6 +61,8 @@ export function SiteProvider({ children }) {
         isError,
         error,
         refetch,
+        realtimeOccupancy,
+        setRealtimeOccupancy,
       }}
     >
       {children}
