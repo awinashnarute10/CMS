@@ -1,121 +1,69 @@
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { ThemeProvider } from '@/context/ThemeContext'
+import { AppLayout } from '@/components/layout/AppLayout'
+import { PageContainer } from '@/components/layout/PageContainer'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { Card, CardContent } from '@/components/ui/card'
+import { Building2, Users } from 'lucide-react'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [activeTab, setActiveTab] = useState('overview')
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+    <ThemeProvider defaultTheme="system">
+      <AppLayout
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+      >
+        <PageContainer>
+          {activeTab === 'overview' ? (
+            <>
+              <PageHeader
+                title="Overview"
+                description="Live occupancy monitoring, footfall analytics, and zone alerts."
+              />
+              <Card className="border border-border bg-card shadow-none">
+                <CardContent className="p-12 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="h-10 w-10 rounded-md bg-secondary border border-border flex items-center justify-center text-muted-foreground">
+                    <Building2 className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-semibold text-foreground">
+                      No Site Selected
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      Select or configure a monitored site to stream live occupancy, dwell analytics, and simulation metrics.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <>
+              <PageHeader
+                title="Crowd Entries"
+                description="Combined entry–exit session logs and visitor dwell tracking."
+              />
+              <Card className="border border-border bg-card shadow-none">
+                <CardContent className="p-12 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="h-10 w-10 rounded-md bg-secondary border border-border flex items-center justify-center text-muted-foreground">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-semibold text-foreground">
+                      No Entry–Exit Logs Available
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      Visitor sessions will be displayed here once connected to the backend analytics dataset.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+        </PageContainer>
+      </AppLayout>
+    </ThemeProvider>
   )
 }
 

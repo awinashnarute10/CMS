@@ -1,111 +1,154 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import "tailwindcss";
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* Semantic Status Tokens */
+  --color-status-success: var(--status-success);
+  --color-status-success-bg: var(--status-success-bg);
+  --color-status-success-border: var(--status-success-border);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-bg: var(--status-warning-bg);
+  --color-status-warning-border: var(--status-warning-border);
+  --color-status-danger: var(--status-danger);
+  --color-status-danger-bg: var(--status-danger-bg);
+  --color-status-danger-border: var(--status-danger-border);
+  --color-status-info: var(--status-info);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-status-info-border: var(--status-info-border);
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+  /* Radius tokens */
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+}
+
+@layer base {
+  :root {
+    /* Emerald Enterprise - Light */
+    --background: #F6F7F8;
+    --foreground: #202923;
+    --card: #FFFFFF;
+    --card-foreground: #202923;
+    --popover: #FFFFFF;
+    --popover-foreground: #202923;
+    --primary: #247A52;
+    --primary-foreground: #FFFFFF;
+    --secondary: #EDF2EE;
+    --secondary-foreground: #202923;
+    --muted: #EDF2EE;
+    --muted-foreground: #68736C;
+    --accent: #EDF2EE;
+    --accent-foreground: #202923;
+    --destructive: #C62828;
+    --destructive-foreground: #FFFFFF;
+    --border: #E1E7E2;
+    --input: #E1E7E2;
+    --ring: #247A52;
+    --radius: 0.5rem;
+
+    /* Semantic Status (separate from primary brand accent) */
+    --status-success: #247A52;
+    --status-success-bg: #EAF4EE;
+    --status-success-border: #C8E3D2;
+    --status-warning: #B26A00;
+    --status-warning-bg: #FFF8E6;
+    --status-warning-border: #F7DC9E;
+    --status-danger: #C62828;
+    --status-danger-bg: #FDF0F0;
+    --status-danger-border: #F5C6C6;
+    --status-info: #355E68;
+    --status-info-bg: #EDF5F7;
+    --status-info-border: #CFE2E6;
+
+    /* Chart Solid Tokens (no gradients) */
+    --chart-occupancy: #247A52;
+    --chart-slate: #546E7A;
+    --chart-teal: #00897B;
+    --chart-amber: #D97706;
+  }
+
+  .dark {
+    /* Emerald Enterprise - Dark */
+    --background: #111713;
+    --foreground: #EEF4EF;
+    --card: #19221C;
+    --card-foreground: #EEF4EF;
+    --popover: #19221C;
+    --popover-foreground: #EEF4EF;
+    --primary: #68C995;
+    --primary-foreground: #102117;
+    --secondary: #222E25;
+    --secondary-foreground: #EEF4EF;
+    --muted: #222E25;
+    --muted-foreground: #A1B0A5;
+    --accent: #222E25;
+    --accent-foreground: #EEF4EF;
+    --destructive: #EF4444;
+    --destructive-foreground: #102117;
+    --border: #303D33;
+    --input: #303D33;
+    --ring: #68C995;
+
+    /* Semantic Status (Dark) */
+    --status-success: #68C995;
+    --status-success-bg: #142E1E;
+    --status-success-border: #224D33;
+    --status-warning: #F59E0B;
+    --status-warning-bg: #2C1F0A;
+    --status-warning-border: #4A3512;
+    --status-danger: #EF4444;
+    --status-danger-bg: #2D1414;
+    --status-danger-border: #4D2222;
+    --status-info: #2DD4BF;
+    --status-info-bg: #0D2724;
+    --status-info-border: #17433E;
+
+    /* Chart Solid Tokens (Dark) */
+    --chart-occupancy: #68C995;
+    --chart-slate: #94A3B8;
+    --chart-teal: #2DD4BF;
+    --chart-amber: #FBBF24;
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+* {
+  border-color: var(--border);
 }
 
 body {
+  background-color: var(--background);
+  color: var(--foreground);
   margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+/* Tabular numerals for timestamps and KPIs */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+/* Strictly enforce no gradients anywhere */
+*, *::before, *::after {
+  background-image: none !important;
 }
