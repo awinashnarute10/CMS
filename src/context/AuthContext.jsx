@@ -4,6 +4,8 @@ import * as authApi from '@/api/auth'
 import { extractUserFromToken, isTokenExpired } from '@/lib/jwt'
 import { queryClient } from '@/lib/queryClient'
 import { disconnectSocket } from '@/api/socket'
+import { getSites } from '@/api/sites'
+import { sitesKeys } from '@/hooks/useSites'
 
 const AuthContext = createContext({
   user: null,
@@ -58,6 +60,13 @@ export function AuthProvider({ children }) {
         role: 'operator',
       }
       setAuthState({ token: extractedToken, user: parsedUser })
+
+      // Eliminate post-login request waterfall: start fetching sites immediately
+      queryClient.prefetchQuery({
+        queryKey: sitesKeys.all,
+        queryFn: ({ signal }) => getSites({ signal }),
+        staleTime: 1000 * 60 * 5,
+      })
     }
 
     return response

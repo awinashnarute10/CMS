@@ -22,15 +22,15 @@ export function AppLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
-      {/* Sidebar */}
+    <div className="h-screen overflow-hidden bg-background text-foreground flex">
+      {/* Sidebar - fixed and non-scrolling */}
       <AppSidebar
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
         <AppHeader
           title={getPageTitle()}
           activeSiteName={activeSiteName}
@@ -38,7 +38,7 @@ export function AppLayout({
           connectionStatus={connectionStatus}
           onOpenMobileNav={() => setMobileOpen(true)}
         />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto min-h-0">
           {children}
         </main>
       </div>

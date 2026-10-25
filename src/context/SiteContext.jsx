@@ -3,6 +3,7 @@ import { useSitesQuery } from '@/hooks/useSites'
 import { useAuth } from '@/hooks/useAuth'
 
 const SITE_STORAGE_KEY = 'cms_selected_site_id'
+const DEFAULT_SITE_ID = 'site-001'
 
 const SiteContext = createContext({
   selectedSite: null,
@@ -18,9 +19,9 @@ export function SiteProvider({ children }) {
   const [realtimeOccupancy, setRealtimeOccupancy] = useState(null)
   const [explicitSiteId, setExplicitSiteId] = useState(() => {
     try {
-      return localStorage.getItem(SITE_STORAGE_KEY) || null
+      return localStorage.getItem(SITE_STORAGE_KEY) || DEFAULT_SITE_ID
     } catch {
-      return null
+      return DEFAULT_SITE_ID
     }
   })
 
@@ -32,11 +33,14 @@ export function SiteProvider({ children }) {
     refetch,
   } = useSitesQuery({ enabled: isAuthenticated })
 
-  // Derive activeSiteId without synchronous setState in effect
+  // Derive activeSiteId without synchronous setState in effect:
+  // If the user has a stored site ID or default site ID, trust it immediately so child queries (occupancy, footfall, dwell, demographics)
+  // fire in parallel with GET /sites instead of waiting for GET /sites to complete (eliminating request waterfall).
+  // Only if sites has loaded and explicitSiteId is not in the list, fall back to sites[0].siteId.
   const selectedSiteId =
-    explicitSiteId && sites.some((s) => s.siteId === explicitSiteId)
+    explicitSiteId && (!sites.length || sites.some((s) => s.siteId === explicitSiteId))
       ? explicitSiteId
-      : sites[0]?.siteId || null
+      : sites[0]?.siteId || explicitSiteId || DEFAULT_SITE_ID
 
   const handleSelectSite = (siteId) => {
     setExplicitSiteId(siteId)

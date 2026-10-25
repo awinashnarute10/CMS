@@ -1,7 +1,12 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Users, Radio, X } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { useSite } from '@/context/SiteContext'
+import { analyticsKeys } from '@/hooks/useAnalytics'
+import { computeRangeFromPreset } from '@/components/common/TimeRangeSelector'
+import { getEntryExitRecords, getOccupancyTimeSeries, getFootfall } from '@/api/analytics'
 
 const NAV_ITEMS = [
   {
@@ -25,6 +30,49 @@ export function AppSidebar({
 }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const { selectedSiteId } = useSite()
+  const queryClient = useQueryClient()
+
+  const handlePrefetch = (path) => {
+    if (!selectedSiteId) return
+    const { fromUtc, toUtc } = computeRangeFromPreset('24h')
+
+    if (path === '/crowd-entries') {
+      queryClient.prefetchQuery({
+        queryKey: analyticsKeys.entryExit({
+          siteId: selectedSiteId,
+          fromUtc,
+          toUtc,
+          pageSize: 50,
+          pageNumber: 1,
+        }),
+        queryFn: ({ signal }) =>
+          getEntryExitRecords(
+            { siteId: selectedSiteId, fromUtc, toUtc, pageSize: 50, pageNumber: 1 },
+            { signal }
+          ),
+        staleTime: 1000 * 30,
+      })
+    } else if (path === '/overview') {
+      queryClient.prefetchQuery({
+        queryKey: analyticsKeys.occupancy({ siteId: selectedSiteId, fromUtc, toUtc }),
+        queryFn: ({ signal }) => getOccupancyTimeSeries({ siteId: selectedSiteId, fromUtc, toUtc }, { signal }),
+        staleTime: 1000 * 30,
+      })
+      queryClient.prefetchQuery({
+        queryKey: analyticsKeys.footfall({ siteId: selectedSiteId, period: 'today' }),
+        queryFn: ({ signal }) => {
+          const now = new Date()
+          const startOfDayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)
+          return getFootfall(
+            { siteId: selectedSiteId, fromUtc: startOfDayUtc, toUtc: now.getTime() },
+            { signal }
+          )
+        },
+        staleTime: 1000 * 30,
+      })
+    }
+  }
 
   return (
     <>
@@ -40,14 +88,14 @@ export function AppSidebar({
       {/* Sidebar Container */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 border-r border-border bg-card flex flex-col transition-transform duration-200 md:static md:translate-x-0',
+          'fixed inset-y-0 left-0 z-50 w-64 border-r border-border bg-card flex flex-col h-full transition-transform duration-200 md:static md:translate-x-0 md:h-screen md:shrink-0',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
           className
         )}
         aria-label="Main Navigation"
       >
         {/* Brand / Header */}
-        <div className="h-14 px-5 border-b border-border flex items-center justify-between">
+        <div className="h-14 px-5 border-b border-border flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="h-6 w-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs tracking-wider">
               CM
@@ -88,6 +136,8 @@ export function AppSidebar({
               <button
                 key={item.id}
                 type="button"
+                onMouseEnter={() => handlePrefetch(item.path)}
+                onFocus={() => handlePrefetch(item.path)}
                 onClick={() => {
                   navigate(item.path)
                   onCloseMobile?.()
@@ -114,7 +164,7 @@ export function AppSidebar({
         </nav>
 
         {/* Operational System Status Footer */}
-        <div className="p-4 border-t border-border bg-card">
+        <div className="p-4 border-t border-border bg-card shrink-0">
           <div className="p-3 rounded-md bg-secondary/70 border border-border flex items-center gap-2.5 text-xs">
             <span className="relative flex h-2 w-2">
               <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />

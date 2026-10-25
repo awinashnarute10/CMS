@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   Search,
   Filter,
@@ -23,7 +24,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useSite } from '@/context/SiteContext'
-import { useEntryExitQuery } from '@/hooks/useAnalytics'
+import { useEntryExitQuery, analyticsKeys } from '@/hooks/useAnalytics'
+import { getEntryExitRecords } from '@/api/analytics'
 
 function formatTimestamp(utcMs, localFallback) {
   if (typeof utcMs === 'number' && !isNaN(utcMs)) {
@@ -81,6 +83,29 @@ export function CrowdEntriesPage() {
 
   const totalRecords = pageData?.totalRecords ?? 0
   const totalPages = pageData?.totalPages || (totalRecords > 0 ? Math.ceil(totalRecords / pageSize) : 1)
+
+  const queryClient = useQueryClient()
+
+  // Eliminate pagination request waterfall: prefetch adjacent page into TanStack Query cache
+  useEffect(() => {
+    if (pageNumber < totalPages && selectedSiteId) {
+      queryClient.prefetchQuery({
+        queryKey: analyticsKeys.entryExit({
+          siteId: selectedSiteId,
+          fromUtc,
+          toUtc,
+          pageSize,
+          pageNumber: pageNumber + 1,
+        }),
+        queryFn: ({ signal }) =>
+          getEntryExitRecords(
+            { siteId: selectedSiteId, fromUtc, toUtc, pageSize, pageNumber: pageNumber + 1 },
+            { signal }
+          ),
+        staleTime: 1000 * 30,
+      })
+    }
+  }, [pageNumber, totalPages, selectedSiteId, fromUtc, toUtc, pageSize, queryClient])
 
   // Filter in-memory for name/ID search and zone dropdown
   const filteredRecords = useMemo(() => {
