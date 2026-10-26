@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { shouldRetryQuery } from '@/lib/queryClient'
-import { computeRangeFromPreset, TIME_PRESETS } from '@/components/common/TimeRangeSelector'
+import { computeRangeFromPreset, getRolling24hRange, TIME_PRESETS } from '@/components/common/TimeRangeSelector'
 import { resolveLiveTimeRange } from '@/api/analytics'
 import { analyticsKeys } from '@/hooks/useAnalytics'
 import { formatDwellDuration } from '@/lib/utils'
@@ -52,6 +52,20 @@ describe('Time Range & Preset Calculations', () => {
   it('falls back gracefully to 24h when unknown preset is passed', () => {
     const { presetId } = computeRangeFromPreset('unknown-period')
     expect(presetId).toBe('24h')
+  })
+
+  it('computes rolling 24h range anchored to the current hour floor', () => {
+    // Fixed sample: 2026-10-27 20:30:15
+    const mockRefDate = new Date(2026, 9, 27, 20, 30, 15, 0)
+    const { fromUtc, toUtc, currentHourMs, presetId } = getRolling24hRange(mockRefDate)
+
+    const expectedCurrentHourMs = new Date(2026, 9, 27, 20, 0, 0, 0).getTime()
+    const expectedFromUtc = new Date(2026, 9, 26, 20, 0, 0, 0).getTime()
+
+    expect(presetId).toBe('24h')
+    expect(currentHourMs).toBe(expectedCurrentHourMs)
+    expect(fromUtc).toBe(expectedFromUtc)
+    expect(toUtc).toBe(mockRefDate.getTime())
   })
 
   it('ensures toUtc is always the current time when the API is fired', () => {

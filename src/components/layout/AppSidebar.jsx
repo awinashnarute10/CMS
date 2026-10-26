@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { LayoutDashboard, Users, X, ChevronLeft, ChevronRight, LogOut } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/context/AuthContext'
 import { useSite } from '@/context/SiteContext'
 import { analyticsKeys } from '@/hooks/useAnalytics'
 import { computeRangeFromPreset } from '@/components/common/TimeRangeSelector'
@@ -41,6 +42,13 @@ export function AppSidebar({
   const navigate = useNavigate()
   const { selectedSiteId } = useSite()
   const queryClient = useQueryClient()
+  const { logout } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+    onCloseMobile?.()
+    navigate('/login')
+  }
 
   const toggleCollapse = () => {
     setIsCollapsed((prev) => {
@@ -84,9 +92,17 @@ export function AppSidebar({
         queryKey: analyticsKeys.footfall({ siteId: selectedSiteId, period: 'today' }),
         queryFn: ({ signal }) => {
           const now = new Date()
-          const startOfDayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)
+          const currentHourMs = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate(),
+            now.getHours(),
+            0,
+            0,
+            0
+          ).getTime()
           return getFootfall(
-            { siteId: selectedSiteId, fromUtc: startOfDayUtc, toUtc: now.getTime() },
+            { siteId: selectedSiteId, fromUtc: currentHourMs - 24 * 60 * 60 * 1000, toUtc: now.getTime() },
             { signal }
           )
         },
@@ -243,6 +259,25 @@ export function AppSidebar({
             )
           })}
         </nav>
+
+        {/* Bottom Section: Logout action with icon and title side by side */}
+        <div className={cn('p-3 border-t border-[#718486]/30 relative z-10', isCollapsed && 'px-2 flex justify-center')}>
+          <button
+            type="button"
+            onClick={handleLogout}
+            title="Logout"
+            aria-label="Logout"
+            className={cn(
+              'group flex items-center rounded-lg text-sm text-[#A0B0B2] hover:text-white hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8F8B]',
+              isCollapsed
+                ? 'justify-center h-10 w-10 mx-auto px-0'
+                : 'w-full gap-3 px-3.5 py-2.5 text-left'
+            )}
+          >
+            <LogOut className="h-4 w-4 shrink-0 transition-colors text-[#A0B0B2] group-hover:text-white" />
+            {!isCollapsed && <span className="font-medium text-sm">Logout</span>}
+          </button>
+        </div>
       </aside>
     </>
   )

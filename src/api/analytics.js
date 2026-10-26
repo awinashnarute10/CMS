@@ -57,18 +57,26 @@ export async function getFootfall({ siteId, fromUtc, toUtc }, options = {}) {
 }
 
 /**
- * Helper to get today's footfall (from UTC midnight to current moment).
+ * Helper to get rolling 24h footfall (from current hour minus 24h to current moment).
  * POST /api/analytics/footfall
  * @param {Object} params - { siteId }
  * @param {Object} [options] - Optional axios config
  */
 export async function getTodaysFootfall({ siteId }, options = {}) {
   const now = new Date()
-  const startOfDayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)
+  const currentHourMs = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    now.getHours(),
+    0,
+    0,
+    0
+  ).getTime()
   return getFootfall(
     {
       siteId,
-      fromUtc: startOfDayUtc,
+      fromUtc: currentHourMs - 24 * 60 * 60 * 1000,
       toUtc: now.getTime(),
     },
     options

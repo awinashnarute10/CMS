@@ -20,14 +20,7 @@ export function ThemeProvider({ children, defaultTheme = 'light' }) {
     }
   })
 
-  const [resolvedTheme, setResolvedTheme] = useState(() => {
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem(THEME_STORAGE_KEY) : null
-      return stored === 'dark' ? 'dark' : 'light'
-    } catch {
-      return defaultTheme
-    }
-  })
+  const resolvedTheme = theme === 'dark' ? 'dark' : 'light'
 
   const toggleTheme = useCallback(() => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
@@ -36,8 +29,6 @@ export function ThemeProvider({ children, defaultTheme = 'light' }) {
   useEffect(() => {
     const root = document.documentElement
     const isDark = theme === 'dark'
-    setResolvedTheme(isDark ? 'dark' : 'light')
-
     if (isDark) {
       root.classList.add('dark')
     } else {

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import React from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { CrowdEntriesPage } from '@/pages/CrowdEntriesPage'
@@ -92,7 +91,7 @@ describe('CrowdEntriesPage Component', () => {
     vi.restoreAllMocks()
   })
 
-  it('renders status filter buttons with Still Inside count and Completed count without KPI cards', () => {
+  it('renders clean PRD 5.3 visit records without 3 zones badge, search bar, or filter buttons', () => {
     act(() => {
       root.render(
         <QueryClientProvider client={queryClient}>
@@ -103,17 +102,21 @@ describe('CrowdEntriesPage Component', () => {
       )
     })
 
-    // Confirms KPI cards were removed from Crowd Entries
+    // Confirms no 3 zones badge
+    expect(container.textContent).not.toContain('2 Zones')
+    expect(container.textContent).not.toContain('3 Zones')
+
+    // Confirms no KPI cards
     expect(container.textContent).not.toContain('Total Entries')
     expect(container.textContent).not.toContain('Page Navigation')
 
-    // 2 are inside (Alice, Charlie), 1 completed (Bob)
-    expect(container.textContent).toContain('All (3)')
-    expect(container.textContent).toContain('Still Inside (2)')
-    expect(container.textContent).toContain('Completed (1)')
+    // Confirms no search input or status filter buttons
+    expect(container.querySelector('input[type="search"]')).toBeNull()
+    expect(container.textContent).not.toContain('All (3)')
+    expect(container.textContent).not.toContain('Still Inside (2)')
   })
 
-  it('renders "Still Inside" status badge and active visit label for visitors without exit time', () => {
+  it('renders PRD 5.3 visit table headers and displays Active inside for un-exited visitors', () => {
     act(() => {
       root.render(
         <QueryClientProvider client={queryClient}>
@@ -124,12 +127,21 @@ describe('CrowdEntriesPage Component', () => {
       )
     })
 
-    expect(container.textContent).toContain('Still Inside')
+    // PRD 5.3 columns: Visitor Name, Gender, Entry Time, Exit Time, Dwell Time
+    expect(container.textContent).toContain('Visitor Name')
+    expect(container.textContent).toContain('Gender')
+    expect(container.textContent).toContain('Entry Time')
+    expect(container.textContent).toContain('Exit Time')
+    expect(container.textContent).toContain('Dwell Time')
+
+    // Active inside pulse for unexited visitors (Alice Johnson and Charlie Davis)
     expect(container.textContent).toContain('Active inside')
-    expect(container.textContent).toContain('Completed')
+    expect(container.textContent).toContain('Alice Johnson')
+    expect(container.textContent).toContain('Bob Smith')
+    expect(container.textContent).toContain('Charlie Davis')
   })
 
-  it('filters table to show only currently inside visitors when "Still Inside" button is clicked', () => {
+  it('renders pagination controls with page size selector and record counts', () => {
     act(() => {
       root.render(
         <QueryClientProvider client={queryClient}>
@@ -140,18 +152,9 @@ describe('CrowdEntriesPage Component', () => {
       )
     })
 
-    const insideBtn = Array.from(container.querySelectorAll('button')).find((b) =>
-      b.textContent.includes('Still Inside')
-    )
-    expect(insideBtn).not.toBeUndefined()
-
-    act(() => {
-      insideBtn.click()
-    })
-
-    // Alice and Charlie should be present, Bob Smith (completed) should be filtered out
-    expect(container.textContent).toContain('Alice Johnson')
-    expect(container.textContent).toContain('Charlie Davis')
-    expect(container.textContent).not.toContain('Bob Smith')
+    // Confirms pagination controls
+    expect(container.textContent).toContain('Rows:')
+    expect(container.textContent).toContain('Showing')
+    expect(container.textContent).toContain('records')
   })
 })

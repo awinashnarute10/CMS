@@ -25,7 +25,7 @@ export function getSocketUrl() {
 export function getSocket(token = null) {
   if (socketInstance) {
     if (token) {
-      const cleanToken = token.startsWith('Bearer ') ? token.slice(7).trim() : token.trim()
+      const cleanToken = token.replace(/^bearer\s+/i, '').trim()
       socketInstance.auth = { token: cleanToken }
     }
     return socketInstance
@@ -33,7 +33,7 @@ export function getSocket(token = null) {
 
   const url = getSocketUrl()
   const cleanToken = token
-    ? (token.startsWith('Bearer ') ? token.slice(7).trim() : token.trim())
+    ? token.replace(/^bearer\s+/i, '').trim()
     : undefined
 
   socketInstance = io(url, {

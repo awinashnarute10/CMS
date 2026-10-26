@@ -22,16 +22,23 @@ export function OccupancyTimeChart({ data = [], height = 280 }) {
   const chartData = useMemo(() => {
     if (!Array.isArray(data) || data.length === 0) return []
 
-    return data.map((item, index) => {
-      const ts = item.timestamp ?? item.hourUtc ?? (item.hour ? new Date(item.hour).getTime() : null)
-      let timeLabel = item.timeLabel || item.time || ''
+    const currentHour = new Date().getHours()
 
-      if (!timeLabel && ts) {
-        const d = new Date(ts)
-        timeLabel = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
-      } else if (!timeLabel) {
-        timeLabel = `T+${index}h`
-      }
+    // 1. Map items to extract raw timestamp, hour, and counts
+    const mapped = data.map((item, index) => {
+      const ts =
+        item.timestamp ??
+        item.hourUtc ??
+        item.timeUtc ??
+        item.fromUtc ??
+        (item.hour && !isNaN(new Date(item.hour).getTime()) ? new Date(item.hour).getTime() : null)
+
+      const hourNum =
+        typeof item.hour === 'number' && item.hour >= 0 && item.hour < 24
+          ? item.hour
+          : typeof item.hour === 'string' && /^\d{1,2}$/.test(item.hour)
+          ? Number(item.hour)
+          : null
 
       const rawCount =
         typeof item.occupancy === 'number'
@@ -65,8 +72,50 @@ export function OccupancyTimeChart({ data = [], height = 280 }) {
       return {
         ...item,
         timestamp: ts,
+        hourNum,
+        rawIndex: index,
+        rawCount: Number.isNaN(rawCount) ? 0 : rawCount,
+      }
+    })
+
+    // 2. Sort chronologically so the timeline flows from 24h ago to current hour
+    const hasTimestamps = mapped.some((m) => typeof m.timestamp === 'number' && m.timestamp > 86400000)
+    const hasHours = mapped.every((m) => m.hourNum !== null)
+
+    if (hasTimestamps) {
+      mapped.sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0))
+    } else if (hasHours && mapped.length > 1) {
+      // Sort by hours ago descending: oldest (23 hours ago) first, newest (current hour, 0 hours ago) last
+      mapped.sort((a, b) => {
+        const agoA = (currentHour - a.hourNum + 24) % 24
+        const agoB = (currentHour - b.hourNum + 24) % 24
+        return agoB - agoA
+      })
+    }
+
+    // 3. Assign 24h time labels (HH:MM or HH:00)
+    return mapped.map((item, index) => {
+      let timeLabel
+      if (typeof item.timestamp === 'number' && !isNaN(item.timestamp) && item.timestamp > 86400000) {
+        const d = new Date(item.timestamp)
+        const hh = String(d.getHours()).padStart(2, '0')
+        const mm = String(d.getMinutes()).padStart(2, '0')
+        timeLabel = `${hh}:${mm}`
+      } else if (item.hourNum !== null) {
+        timeLabel = `${String(item.hourNum).padStart(2, '0')}:00`
+      } else if (item.timeLabel && !item.timeLabel.startsWith('T+') && /^\d{1,2}:\d{2}/.test(item.timeLabel)) {
+        timeLabel = item.timeLabel.slice(0, 5)
+      } else if (item.time && !item.time.startsWith('T+') && /^\d{1,2}:\d{2}/.test(item.time)) {
+        timeLabel = item.time.slice(0, 5)
+      } else {
+        const hour = (currentHour - (mapped.length - 1 - index) + 240) % 24
+        timeLabel = `${String(hour).padStart(2, '0')}:00`
+      }
+
+      return {
+        ...item,
         timeLabel,
-        occupancy: Number.isNaN(rawCount) ? 0 : rawCount,
+        occupancy: item.rawCount,
       }
     })
   }, [data])
@@ -119,6 +168,7 @@ export function OccupancyTimeChart({ data = [], height = 280 }) {
             />
             <XAxis
               dataKey="timeLabel"
+              interval={chartData.length > 12 ? 1 : 0}
               stroke="#777B80"
               fontSize={11}
               tickLine={false}

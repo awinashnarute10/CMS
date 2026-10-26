@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, useCallback } f
 import { connectSocket, disconnectSocket, onSocketEvent, getSocket } from '@/api/socket'
 import { useAuth } from '@/hooks/useAuth'
 import { useSite } from '@/context/SiteContext'
+import { getAlertDedupeKey, updateOccupancyTotal } from '@/lib/socketUtils'
 
 const SocketContext = createContext({
   status: 'disconnected',
@@ -41,7 +42,7 @@ export function SocketProvider({ children }) {
 
     if (typeof payload === 'number') {
       setLastEventTimestamp(Date.now())
-      setRealtimeOccupancyRef.current(payload)
+      setRealtimeOccupancyRef.current(updateOccupancyTotal(zoneOccupanciesRef.current, null, payload))
       return
     }
 
@@ -52,7 +53,7 @@ export function SocketProvider({ children }) {
         return acc + Number(val || 0)
       }, 0)
       setLastEventTimestamp(Date.now())
-      setRealtimeOccupancyRef.current(sum)
+      setRealtimeOccupancyRef.current(updateOccupancyTotal(zoneOccupanciesRef.current, null, sum))
       return
     }
 
@@ -68,7 +69,7 @@ export function SocketProvider({ children }) {
         return acc + Number(val || 0)
       }, 0)
       setLastEventTimestamp(Date.now())
-      setRealtimeOccupancyRef.current(sum)
+      setRealtimeOccupancyRef.current(updateOccupancyTotal(zoneOccupanciesRef.current, null, sum))
       return
     }
 
@@ -100,15 +101,9 @@ export function SocketProvider({ children }) {
 
     if (matchesSite) {
       const zoneId = data.zoneId || data.zone || data.zone_id || data.floor
-      if (zoneId) {
-        zoneOccupanciesRef.current.set(String(zoneId), count)
-        const siteTotal = Array.from(zoneOccupanciesRef.current.values()).reduce((a, b) => a + b, 0)
-        console.log('[Socket IO] Zone occupancy update for', zoneId, '->', count, 'Total site sum:', siteTotal)
-        setRealtimeOccupancyRef.current(siteTotal)
-      } else {
-        console.log('[Socket IO] Occupancy updated to:', count, 'payload:', payload)
-        setRealtimeOccupancyRef.current(count)
-      }
+      setRealtimeOccupancyRef.current(
+        updateOccupancyTotal(zoneOccupanciesRef.current, zoneId, count)
+      )
     }
   }, [])
 
@@ -116,18 +111,15 @@ export function SocketProvider({ children }) {
   const handleAlertEvent = useCallback((payload) => {
     if (!payload || typeof payload !== 'object') return
 
-    const alertId =
-      payload.id ||
-      payload.eventId ||
-      `${payload.siteId || payload.site || 'site'}-${payload.zoneId || payload.zone || 'zone'}-${payload.timestamp || Date.now()}`
+    const alertDedupeKey = getAlertDedupeKey(payload)
 
     // Deduplicate rapid repeat events
-    if (recentAlertIdsRef.current.has(alertId)) {
+    if (recentAlertIdsRef.current.has(alertDedupeKey)) {
       return
     }
-    recentAlertIdsRef.current.add(alertId)
+    recentAlertIdsRef.current.add(alertDedupeKey)
     setTimeout(() => {
-      recentAlertIdsRef.current.delete(alertId)
+      recentAlertIdsRef.current.delete(alertDedupeKey)
     }, 10000)
 
     const normalizedSeverity =
@@ -143,7 +135,7 @@ export function SocketProvider({ children }) {
       : now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 
     const normalizedAlert = {
-      id: alertId,
+      id: `${alertDedupeKey}-${Date.now()}`,
       siteId: payload.siteId || payload.site || selectedSiteIdRef.current || 'SITE-AE-DXB-001',
       zoneId: payload.zoneId || payload.zone || 'zone-main',
       zoneName: payload.zoneName || payload.zone || 'Monitored Area',
@@ -157,7 +149,6 @@ export function SocketProvider({ children }) {
       rawTimestamp: payload.timestamp || Date.now(),
     }
 
-    console.log('[Socket IO] Alert received:', normalizedAlert)
     setLastEventTimestamp(Date.now())
     setAlerts((prev) => [normalizedAlert, ...prev.slice(0, 49)])
   }, [])
@@ -230,7 +221,6 @@ export function SocketProvider({ children }) {
 
     // Catch-all socket event listener if supported by Socket.IO client
     const handleAnyEvent = (eventName, ...args) => {
-      console.log('[Socket Inbound Event]', eventName, args[0])
       const lower = eventName.toLowerCase()
       if (lower.includes('occupancy') || lower.includes('headcount') || lower.includes('presence')) {
         handleOccupancyUpdate(args[0])

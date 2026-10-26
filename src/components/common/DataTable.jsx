@@ -122,8 +122,8 @@ export function DataTable({
       </div>
 
       {/* Pagination Controls */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-1 text-xs text-muted-foreground">
-        <div className="flex items-center gap-2">
+      <div className="relative flex flex-col sm:flex-row items-center justify-center gap-3 px-1 text-xs text-muted-foreground min-h-10">
+        <div className="sm:absolute sm:left-1 flex items-center gap-2">
           {typeof totalRecords === 'number' && totalRecords > 0 ? (
             <span>
               Showing <strong className="text-foreground font-mono tabular-nums">{startRecord}</strong>–
@@ -142,7 +142,7 @@ export function DataTable({
           )}
         </div>
 
-        {totalPages > 1 && (
+        {totalPages >= 1 && (
           <div className="flex items-center gap-1">
             <span className="mr-2 text-xs">
               Page <strong className="text-foreground font-mono tabular-nums">{pageNumber}</strong> of{' '}

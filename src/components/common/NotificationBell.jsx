@@ -17,9 +17,6 @@ export function NotificationBell({ className }) {
   const pendingFocusRef = useRef(null)
   const closeTimeoutRef = useRef(null)
 
-  // Keep alertItemRefs array length synchronized with alerts
-  alertItemRefs.current = alertItemRefs.current.slice(0, alerts.length)
-
   const handleOpenModal = () => {
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current)
@@ -46,8 +43,7 @@ export function NotificationBell({ className }) {
     }
 
     // In test environment run close immediately; in browser, wait 300ms for slide-out animation
-    const isTest = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test'
-    const duration = isTest ? 0 : 300
+    const duration = import.meta.env.MODE === 'test' ? 0 : 300
 
     if (duration === 0) {
       if (dialogRef.current?.open) {

@@ -31,7 +31,7 @@ export function useFootfallQuery({ siteId, fromUtc, toUtc, enabled = true } = {}
 }
 
 /**
- * Hook for today's footfall query (calculates UTC midnight to now)
+ * Hook for today's footfall query (calculates rolling 24h from current hour minus 24h to now)
  */
 export function useTodaysFootfallQuery({ siteId, enabled = true } = {}) {
   const isEnabled = Boolean(siteId && enabled)
@@ -40,9 +40,17 @@ export function useTodaysFootfallQuery({ siteId, enabled = true } = {}) {
     queryKey: analyticsKeys.footfall({ siteId, period: 'today' }),
     queryFn: ({ signal }) => {
       const now = new Date()
-      const startOfDayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0)
+      const currentHourMs = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        now.getHours(),
+        0,
+        0,
+        0
+      ).getTime()
       return getFootfall(
-        { siteId, fromUtc: startOfDayUtc, toUtc: now.getTime() },
+        { siteId, fromUtc: currentHourMs - 24 * 60 * 60 * 1000, toUtc: now.getTime() },
         { signal }
       )
     },
@@ -52,7 +60,7 @@ export function useTodaysFootfallQuery({ siteId, enabled = true } = {}) {
 }
 
 /**
- * Hook for yesterday's footfall query (calculates yesterday's UTC window for comparison)
+ * Hook for yesterday's footfall query (calculates previous 24h window: current hour - 48h to current hour - 24h)
  */
 export function useYesterdayFootfallQuery({ siteId, enabled = true } = {}) {
   const isEnabled = Boolean(siteId && enabled)
@@ -61,10 +69,21 @@ export function useYesterdayFootfallQuery({ siteId, enabled = true } = {}) {
     queryKey: analyticsKeys.footfall({ siteId, period: 'yesterday' }),
     queryFn: ({ signal }) => {
       const now = new Date()
-      const startOfYesterdayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1, 0, 0, 0, 0)
-      const endOfYesterdayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0) - 1
+      const currentHourMs = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        now.getHours(),
+        0,
+        0,
+        0
+      ).getTime()
       return getFootfall(
-        { siteId, fromUtc: startOfYesterdayUtc, toUtc: endOfYesterdayUtc },
+        {
+          siteId,
+          fromUtc: currentHourMs - 48 * 60 * 60 * 1000,
+          toUtc: currentHourMs - 24 * 60 * 60 * 1000,
+        },
         { signal }
       )
     },
@@ -89,6 +108,39 @@ export function useDwellQuery({ siteId, fromUtc, toUtc, enabled = true } = {}) {
 }
 
 export const useAverageDwellQuery = useDwellQuery
+
+/**
+ * Hook for yesterday's average dwell duration query (previous 24h window for comparison)
+ */
+export function useYesterdayDwellQuery({ siteId, enabled = true } = {}) {
+  const isEnabled = Boolean(siteId && enabled)
+
+  return useQuery({
+    queryKey: analyticsKeys.dwell({ siteId, period: 'yesterday' }),
+    queryFn: ({ signal }) => {
+      const now = new Date()
+      const currentHourMs = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        now.getHours(),
+        0,
+        0,
+        0
+      ).getTime()
+      return getDwell(
+        {
+          siteId,
+          fromUtc: currentHourMs - 48 * 60 * 60 * 1000,
+          toUtc: currentHourMs - 24 * 60 * 60 * 1000,
+        },
+        { signal }
+      )
+    },
+    enabled: isEnabled,
+    staleTime: 1000 * 60 * 5,
+  })
+}
 
 /**
  * Hook for hourly occupancy time series query

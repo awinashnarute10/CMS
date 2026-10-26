@@ -85,8 +85,6 @@ export function AlertFeedCard({
             {alerts.map((alert) => {
               const isHigh = alert.severity === 'high'
               const isMedium = alert.severity === 'medium'
-              const isLow = !isHigh && !isMedium
-
               return (
                 <div
                   key={alert.id}

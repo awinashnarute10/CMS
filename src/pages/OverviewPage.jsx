@@ -1,10 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Users, Footprints, Clock } from 'lucide-react'
 
 import { PageContainer } from '@/components/layout/PageContainer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { KpiCard } from '@/components/common/KpiCard'
-import { TimeRangeSelector, computeRangeFromPreset } from '@/components/common/TimeRangeSelector'
+import { getRolling24hRange } from '@/components/common/TimeRangeSelector'
 import { ChartCard } from '@/components/common/ChartCard'
 import { OccupancyTimeChart } from '@/components/charts/OccupancyTimeChart'
 import { DemographicsTrendChart } from '@/components/charts/DemographicsTrendChart'
@@ -15,6 +15,7 @@ import {
   useTodaysFootfallQuery,
   useYesterdayFootfallQuery,
   useDwellQuery,
+  useYesterdayDwellQuery,
   useDemographicsQuery,
 } from '@/hooks/useAnalytics'
 import { formatDwellDuration } from '@/lib/utils'
@@ -78,13 +79,30 @@ function extractSeries(response) {
   return []
 }
 
+function computeComparison(currentVal, previousVal) {
+  if (typeof currentVal !== 'number' || typeof previousVal !== 'number' || isNaN(currentVal) || isNaN(previousVal)) {
+    return null
+  }
+  if (previousVal === 0) {
+    if (currentVal > 0) return { delta: '+100% vs yesterday', trend: 'up' }
+    if (currentVal < 0) return { delta: '-100% vs yesterday', trend: 'down' }
+    return { delta: '0% vs yesterday', trend: 'neutral' }
+  }
+  const diff = currentVal - previousVal
+  const pct = Math.round((diff / previousVal) * 100)
+  const sign = pct > 0 ? '+' : ''
+  return {
+    delta: `${sign}${pct}% vs yesterday`,
+    trend: pct > 0 ? 'up' : pct < 0 ? 'down' : 'neutral',
+  }
+}
+
 export function OverviewPage() {
-  const { selectedSite, selectedSiteId, isLoading: isLoadingSite, realtimeOccupancy } = useSite()
-  const [timePreset, setTimePreset] = useState('24h')
+  const { selectedSiteId, isLoading: isLoadingSite, realtimeOccupancy } = useSite()
 
   const { fromUtc, toUtc } = useMemo(
-    () => computeRangeFromPreset(timePreset),
-    [timePreset]
+    () => getRolling24hRange(),
+    []
   )
 
   // Analytics queries
@@ -105,20 +123,10 @@ export function OverviewPage() {
     enabled: Boolean(selectedSiteId),
   })
 
-  const footfallComparison = useMemo(() => {
-    const today = footfallQuery.data?.footfall
-    const yesterday = yesterdayFootfallQuery.data?.footfall
-    if (typeof today === 'number' && typeof yesterday === 'number' && yesterday > 0) {
-      const diff = today - yesterday
-      const pct = Math.round((diff / yesterday) * 100)
-      const sign = pct >= 0 ? '+' : ''
-      return {
-        delta: `${sign}${pct}% vs yesterday`,
-        trend: pct >= 0 ? 'up' : 'down',
-      }
-    }
-    return null
-  }, [footfallQuery.data?.footfall, yesterdayFootfallQuery.data?.footfall])
+  const footfallComparison = useMemo(
+    () => computeComparison(footfallQuery.data?.footfall, yesterdayFootfallQuery.data?.footfall),
+    [footfallQuery.data?.footfall, yesterdayFootfallQuery.data?.footfall]
+  )
 
   const dwellQuery = useDwellQuery({
     siteId: selectedSiteId,
@@ -126,6 +134,16 @@ export function OverviewPage() {
     toUtc,
     enabled: Boolean(selectedSiteId),
   })
+
+  const yesterdayDwellQuery = useYesterdayDwellQuery({
+    siteId: selectedSiteId,
+    enabled: Boolean(selectedSiteId),
+  })
+
+  const dwellComparison = useMemo(
+    () => computeComparison(dwellQuery.data?.avgDwellMinutes, yesterdayDwellQuery.data?.avgDwellMinutes),
+    [dwellQuery.data?.avgDwellMinutes, yesterdayDwellQuery.data?.avgDwellMinutes]
+  )
 
   const demographicsQuery = useDemographicsQuery({
     siteId: selectedSiteId,
@@ -157,6 +175,21 @@ export function OverviewPage() {
     return null
   }, [realtimeOccupancy, occupancySeries])
 
+  const yesterdayOccupancy = useMemo(() => {
+    if (occupancySeries.length === 0) return null
+    const first = occupancySeries[0]
+    return typeof first.occupancy === 'number'
+      ? first.occupancy
+      : typeof first.count === 'number'
+      ? first.count
+      : null
+  }, [occupancySeries])
+
+  const occupancyComparison = useMemo(
+    () => computeComparison(liveOccupancy, yesterdayOccupancy),
+    [liveOccupancy, yesterdayOccupancy]
+  )
+
   const isLiveStreamActive = realtimeOccupancy !== null
 
   // Authentic last-updated timestamp from real query execution
@@ -175,17 +208,11 @@ export function OverviewPage() {
       <PageHeader
         title="Overview"
         actions={
-          <div className="flex items-center gap-3">
-            {lastUpdatedFormatted && (
-              <span className="text-[11px] text-muted-foreground font-mono hidden sm:inline">
-                Updated {lastUpdatedFormatted}
-              </span>
-            )}
-            <TimeRangeSelector
-              value={timePreset}
-              onChange={setTimePreset}
-            />
-          </div>
+          lastUpdatedFormatted ? (
+            <span className="text-[11px] text-muted-foreground font-mono">
+              Updated {lastUpdatedFormatted}
+            </span>
+          ) : null
         }
       />
 
@@ -197,17 +224,11 @@ export function OverviewPage() {
           value={liveOccupancy != null ? liveOccupancy.toLocaleString() : null}
           unit="persons"
           icon={Users}
+          comparison={occupancyComparison}
           isLoading={liveOccupancy == null && isLoadingSite}
           isError={isLiveStreamActive ? false : (liveOccupancy == null && occupancyQuery.isError)}
           errorMessage={occupancyQuery.error?.message}
           onRetry={() => occupancyQuery.refetch()}
-          subtitle={
-            isLiveStreamActive
-              ? 'Real-time venue count'
-              : occupancySeries.length > 0
-              ? 'Last recorded count'
-              : 'No occupancy data'
-          }
         />
 
         {/* KPI 2: Today's Footfall */}
@@ -221,7 +242,6 @@ export function OverviewPage() {
           isError={footfallQuery.isError}
           errorMessage={footfallQuery.error?.message}
           onRetry={() => footfallQuery.refetch()}
-          subtitle="Cumulative entries since 00:00 UTC"
         />
 
         {/* KPI 3: Avg Dwell Time */}
@@ -233,15 +253,11 @@ export function OverviewPage() {
               : null
           }
           icon={Clock}
+          comparison={dwellComparison}
           isLoading={dwellQuery.isLoading || isLoadingSite}
           isError={dwellQuery.isError}
           errorMessage={dwellQuery.error?.message}
           onRetry={() => dwellQuery.refetch()}
-          subtitle={
-            dwellQuery.data?.dwellRecords
-              ? `Based on ${dwellQuery.data.dwellRecords.toLocaleString()} recorded visits`
-              : 'Across selected period'
-          }
         />
       </div>
 
@@ -258,8 +274,20 @@ export function OverviewPage() {
         <OccupancyTimeChart data={occupancySeries} />
       </ChartCard>
 
-      {/* Secondary Analytics Section: Demographics Trend & Demographics Breakdown */}
+      {/* Secondary Analytics Section: Demographics Breakdown & Demographics Trend */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <ChartCard
+          title="Gender Demographics"
+          description="Overall male vs. female proportion"
+          isLoading={demographicsQuery.isLoading}
+          isError={demographicsQuery.isError}
+          errorMessage={demographicsQuery.error?.message}
+          onRetry={() => demographicsQuery.refetch()}
+          isEmpty={demographicsSeries.length === 0}
+        >
+          <DemographicsBreakdownChart data={demographicsSeries} />
+        </ChartCard>
+
         <ChartCard
           title="Gender Demographics Trend"
           description="Hourly comparison between male and female visitors"
@@ -271,18 +299,6 @@ export function OverviewPage() {
           isEmpty={demographicsSeries.length === 0}
         >
           <DemographicsTrendChart data={demographicsSeries} />
-        </ChartCard>
-
-        <ChartCard
-          title="Gender Demographics"
-          description="Overall male vs. female proportion"
-          isLoading={demographicsQuery.isLoading}
-          isError={demographicsQuery.isError}
-          errorMessage={demographicsQuery.error?.message}
-          onRetry={() => demographicsQuery.refetch()}
-          isEmpty={demographicsSeries.length === 0}
-        >
-          <DemographicsBreakdownChart data={demographicsSeries} />
         </ChartCard>
       </div>
     </PageContainer>

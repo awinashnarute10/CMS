@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import React from 'react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { LoginPage } from '@/pages/LoginPage'
 import { AuthProvider } from '@/context/AuthContext'

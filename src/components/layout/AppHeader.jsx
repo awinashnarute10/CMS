@@ -6,13 +6,12 @@ import { NotificationBell } from '@/components/common/NotificationBell'
 import { UserMenu } from '@/components/common/UserMenu'
 
 export function AppHeader({
-  title = 'Overview',
   onOpenMobileNav,
   user = null,
 }) {
   return (
     <header className="h-16 border-b border-border bg-card px-4 md:px-6 flex items-center justify-between gap-4 sticky top-0 z-30 shrink-0 shadow-subtle">
-      {/* Left: Mobile Toggle, Page Title on the left, and Location selector with pin icon */}
+      {/* Left: Mobile Toggle, Brand Title on the left, and Location selector with pin icon */}
       <div className="flex items-center gap-3 md:gap-4 min-w-0">
         <Button
           variant="outline"
@@ -25,7 +24,7 @@ export function AppHeader({
         </Button>
 
         <h1 className="text-base md:text-xl font-semibold tracking-tight text-foreground truncate">
-          {title}
+          Crowd Solutions
         </h1>
 
         <div className="hidden sm:block h-5 w-px bg-border shrink-0" aria-hidden="true" />

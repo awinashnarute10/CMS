@@ -44,8 +44,10 @@ export function UserMenu({
     )
   }
 
-  const initials = currentUser.name
-    ? currentUser.name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+  const emailInitial = currentUser.email
+    ? currentUser.email.trim()[0].toUpperCase()
+    : currentUser.name
+    ? currentUser.name.trim()[0].toUpperCase()
     : 'U'
 
   return (
@@ -53,19 +55,12 @@ export function UserMenu({
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-9 px-2 flex items-center gap-2.5 rounded-lg bg-card border border-border hover:border-primary text-foreground transition-colors shadow-subtle focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-          aria-label="User account menu"
+          size="icon"
+          className="relative h-9 w-9 rounded-full bg-secondary border border-border hover:border-primary text-primary font-semibold text-xs transition-colors shadow-subtle focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary flex items-center justify-center p-0"
+          aria-label={`User account: ${currentUser.email || currentUser.name || 'User'}`}
+          title={currentUser.email || currentUser.name}
         >
-          {/* Small circular user avatar */}
-          <div className="h-6 w-6 rounded-full bg-secondary border border-border flex items-center justify-center text-[11px] font-semibold text-primary shrink-0">
-            {initials}
-          </div>
-          <div className="hidden md:flex flex-col text-left leading-none">
-            <span className="text-xs font-medium text-foreground">{currentUser.name}</span>
-            {currentUser.role && (
-              <span className="text-[10px] text-muted-foreground mt-0.5">{currentUser.role}</span>
-            )}
-          </div>
+          {emailInitial}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56 bg-popover border-border shadow-md rounded-lg">

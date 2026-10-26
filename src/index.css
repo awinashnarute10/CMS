@@ -152,10 +152,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Tabular numerals for timestamps and KPIs */
-.tabular-nums {
-  font-variant-numeric: tabular-nums;
-}
 
 /* Sidebar Gradient: dark teal-to-deep-green */
 .sidebar-gradient {

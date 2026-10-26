@@ -20,7 +20,22 @@ export default defineConfig([
     rules: {
       'react-refresh/only-export-components': [
         'warn',
-        { allowConstantExport: true },
+        {
+          allowConstantExport: true,
+          allowExportNames: [
+            'badgeVariants',
+            'buttonVariants',
+            'useChart',
+            'useAuth',
+            'useSite',
+            'useSocket',
+            'useSocketContext',
+            'useTheme',
+            'TIME_PRESETS',
+            'computeRangeFromPreset',
+            'getRolling24hRange',
+          ],
+        },
       ],
     },
   },

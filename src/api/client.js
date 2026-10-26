@@ -62,7 +62,7 @@ apiClient.interceptors.request.use(
   (config) => {
     const token = getStoredToken()
     if (token) {
-      const cleanToken = token.startsWith('Bearer ') ? token.slice(7).trim() : token.trim()
+      const cleanToken = token.replace(/^bearer\s+/i, '').trim()
       config.headers.Authorization = `Bearer ${cleanToken}`
     }
     return config

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
-import React from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { OverviewPage } from '@/pages/OverviewPage'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -62,6 +61,13 @@ describe('OverviewPage Component', () => {
 
     vi.spyOn(useAnalyticsModule, 'useDwellQuery').mockReturnValue({
       data: { avgDwellMinutes: 18.5, dwellRecords: 320 },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    })
+
+    vi.spyOn(useAnalyticsModule, 'useYesterdayDwellQuery').mockReturnValue({
+      data: { avgDwellMinutes: 15.0 },
       isLoading: false,
       isError: false,
       refetch: vi.fn(),

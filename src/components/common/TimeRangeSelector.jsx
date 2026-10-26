@@ -15,6 +15,30 @@ export function computeRangeFromPreset(presetId = '24h') {
   return { fromUtc, toUtc, presetId: preset.id }
 }
 
+/**
+ * Calculates rolling 24-hour observation window anchored to the current hour:
+ * e.g. at 20:30, fromUtc is yesterday 20:00 and toUtc is current moment (20:30).
+ */
+export function getRolling24hRange(refDate = new Date()) {
+  const now = refDate instanceof Date ? refDate : new Date(refDate)
+  const currentHourMs = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    now.getHours(),
+    0,
+    0,
+    0
+  ).getTime()
+
+  return {
+    fromUtc: currentHourMs - 24 * 60 * 60 * 1000,
+    toUtc: now.getTime(),
+    currentHourMs,
+    presetId: '24h',
+  }
+}
+
 export function TimeRangeSelector({
   value = '24h',
   onChange,
