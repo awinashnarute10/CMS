@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, Radio, X } from 'lucide-react'
+import { LayoutDashboard, Users, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -28,10 +29,30 @@ export function AppSidebar({
   onCloseMobile,
   className,
 }) {
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('cms_sidebar_collapsed') === 'true'
+    } catch {
+      return false
+    }
+  })
+
   const location = useLocation()
   const navigate = useNavigate()
   const { selectedSiteId } = useSite()
   const queryClient = useQueryClient()
+
+  const toggleCollapse = () => {
+    setIsCollapsed((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem('cms_sidebar_collapsed', String(next))
+      } catch {
+        // ignore storage error
+      }
+      return next
+    })
+  }
 
   const handlePrefetch = (path) => {
     if (!selectedSiteId) return
@@ -85,48 +106,94 @@ export function AppSidebar({
         />
       )}
 
-      {/* Sidebar Container */}
+      {/* Sidebar Container: Collapsible navigation rail with dark gradient & abstract network pattern */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 border-r border-border bg-card flex flex-col h-full transition-transform duration-200 md:static md:translate-x-0 md:h-screen md:shrink-0',
+          'fixed inset-y-0 left-0 z-50 sidebar-gradient border-r border-[#17282B] flex flex-col h-full transition-all duration-200 ease-in-out md:static md:translate-x-0 md:h-screen md:shrink-0 relative overflow-hidden',
+          isCollapsed
+            ? 'w-[76px] min-w-[76px] max-w-[76px]'
+            : 'w-[240px] min-w-[240px] max-w-[240px]',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
           className
         )}
         aria-label="Main Navigation"
       >
-        {/* Brand / Header */}
-        <div className="h-14 px-5 border-b border-border flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="h-6 w-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-bold text-xs tracking-wider">
-              CM
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold tracking-tight text-foreground">
-                Crowd Ops
-              </span>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
-                Enterprise
-              </span>
-            </div>
-          </div>
-          {mobileOpen && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 md:hidden text-muted-foreground"
-              onClick={onCloseMobile}
-              aria-label="Close navigation menu"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+        {/* Abstract geometric network background overlay */}
+        <div
+          className="absolute inset-0 sidebar-network-pattern pointer-events-none opacity-80"
+          aria-hidden="true"
+        />
+
+        {/* Brand / Header: White brand logo + chevron toggle control */}
+        <div
+          className={cn(
+            'h-16 border-b border-white/10 flex items-center shrink-0 relative z-10 transition-all',
+            isCollapsed ? 'px-2 justify-between gap-1.5' : 'px-4 justify-between'
+          )}
+        >
+          {isCollapsed ? (
+            <>
+              <div
+                className="h-8 w-8 rounded-lg bg-[#0B8F8B] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0"
+                title="CMS - Crowd Ops"
+              >
+                <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 fill-none stroke-current stroke-2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h10a4 4 0 001.5-7.7 5.5 5.5 0 00-10.7-1.8A4 4 0 003 15z" />
+                  <circle cx="12" cy="13" r="1.5" fill="currentColor" />
+                </svg>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-[#A0B0B2] hover:text-white hover:bg-white/10 rounded-md shrink-0"
+                onClick={toggleCollapse}
+                aria-label="Expand sidebar"
+                title="Expand sidebar"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="h-8 w-8 rounded-lg bg-[#0B8F8B] text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
+                  <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 fill-none stroke-current stroke-2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h10a4 4 0 001.5-7.7 5.5 5.5 0 00-10.7-1.8A4 4 0 003 15z" />
+                    <circle cx="12" cy="13" r="1.5" fill="currentColor" />
+                  </svg>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold tracking-tight text-white leading-none">
+                    CMS
+                  </span>
+                  <span className="text-[10px] text-[#A0B0B2] uppercase tracking-widest font-mono mt-1">
+                    Crowd Ops
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-[#A0B0B2] hover:text-white hover:bg-white/10 rounded-md shrink-0"
+                onClick={() => (mobileOpen ? onCloseMobile?.() : toggleCollapse())}
+                aria-label={mobileOpen ? 'Close navigation menu' : 'Collapse sidebar'}
+                title={mobileOpen ? 'Close navigation menu' : 'Collapse sidebar'}
+              >
+                {mobileOpen ? <X className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+              </Button>
+            </>
           )}
         </div>
 
-        {/* Navigation Items */}
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Navigation
-          </div>
+        {/* Navigation Items: Vertically stacked, icons centered when collapsed, label shown when expanded */}
+        <nav className={cn('flex-1 py-4 space-y-1.5 relative z-10', isCollapsed ? 'px-2' : 'px-3')}>
+          {!isCollapsed && (
+            <div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-[#A0B0B2]">
+              Navigation
+            </div>
+          )}
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon
             const isActive =
@@ -142,40 +209,40 @@ export function AppSidebar({
                   navigate(item.path)
                   onCloseMobile?.()
                 }}
+                title={item.label}
+                aria-label={item.label}
                 className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors text-left relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  'group flex items-center rounded-lg text-sm transition-all relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0B8F8B]',
+                  isCollapsed
+                    ? 'justify-center h-10 w-10 mx-auto px-0'
+                    : 'w-full gap-3 px-3.5 py-2.5 text-left',
                   isActive
-                    ? 'bg-secondary text-primary font-medium'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-secondary/60'
+                    ? 'bg-[#718486]/50 text-white font-medium shadow-xs'
+                    : 'text-[#A0B0B2] hover:text-white hover:bg-white/10 font-normal'
                 )}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-primary' : 'text-muted-foreground')} />
-                <span className="flex-1 truncate">{item.label}</span>
+                {/* Slim white indicator bar on the left */}
                 {isActive && (
                   <span
-                    className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-l"
+                    className={cn(
+                      'absolute top-1/2 -translate-y-1/2 bg-white rounded-r',
+                      isCollapsed ? 'left-0 w-0.5 h-4' : 'left-0 w-1 h-5'
+                    )}
                     aria-hidden="true"
                   />
                 )}
+                <Icon
+                  className={cn(
+                    'h-4 w-4 shrink-0 transition-colors',
+                    isActive ? 'text-white' : 'text-[#A0B0B2] group-hover:text-white'
+                  )}
+                />
+                {!isCollapsed && <span className="flex-1 truncate">{item.label}</span>}
               </button>
             )
           })}
         </nav>
-
-        {/* Operational System Status Footer */}
-        <div className="p-4 border-t border-border bg-card shrink-0">
-          <div className="p-3 rounded-md bg-secondary/70 border border-border flex items-center gap-2.5 text-xs">
-            <span className="relative flex h-2 w-2">
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-            </span>
-            <div className="flex flex-col">
-              <span className="font-medium text-foreground">System Engine</span>
-              <span className="text-[11px] text-muted-foreground">Node Socket SSE v1.1</span>
-            </div>
-            <Radio className="h-3.5 w-3.5 text-primary ml-auto" />
-          </div>
-        </div>
       </aside>
     </>
   )

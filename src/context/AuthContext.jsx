@@ -52,22 +52,27 @@ export function AuthProvider({ children }) {
     const response = await authApi.login({ email, password })
     const extractedToken = authApi.extractToken(response)
 
-    if (extractedToken) {
-      setStoredToken(extractedToken)
-      const parsedUser = extractUserFromToken(extractedToken) || {
-        email,
-        name: email.split('@')[0],
-        role: 'operator',
-      }
-      setAuthState({ token: extractedToken, user: parsedUser })
-
-      // Eliminate post-login request waterfall: start fetching sites immediately
-      queryClient.prefetchQuery({
-        queryKey: sitesKeys.all,
-        queryFn: ({ signal }) => getSites({ signal }),
-        staleTime: 1000 * 60 * 5,
-      })
+    if (!extractedToken) {
+      const errorMsg = response?.errorMessage || response?.message || 'Invalid credentials'
+      const error = new Error(errorMsg)
+      error.status = 401
+      throw error
     }
+
+    setStoredToken(extractedToken)
+    const parsedUser = extractUserFromToken(extractedToken) || {
+      email,
+      name: email.split('@')[0],
+      role: 'operator',
+    }
+    setAuthState({ token: extractedToken, user: parsedUser })
+
+    // Eliminate post-login request waterfall: start fetching sites immediately
+    queryClient.prefetchQuery({
+      queryKey: sitesKeys.all,
+      queryFn: ({ signal }) => getSites({ signal }),
+      staleTime: 1000 * 60 * 5,
+    })
 
     return response
   }

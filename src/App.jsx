@@ -1,16 +1,57 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { lazy, Suspense, useEffect } from 'react'
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/common/ProtectedRoute'
-import { LoginPage } from '@/pages/LoginPage'
-import { OverviewPage } from '@/pages/OverviewPage'
-import { CrowdEntriesPage } from '@/pages/CrowdEntriesPage'
-import { NotFoundPage } from '@/pages/NotFoundPage'
+import { LoadingState } from '@/components/common/LoadingState'
+import { useAuth } from '@/context/AuthContext'
+
+const LoginPage = lazy(() => import('@/pages/LoginPage').then(m => ({ default: m.LoginPage })))
+const OverviewPage = lazy(() => import('@/pages/OverviewPage').then(m => ({ default: m.OverviewPage })))
+const CrowdEntriesPage = lazy(() => import('@/pages/CrowdEntriesPage').then(m => ({ default: m.CrowdEntriesPage })))
+const NotFoundPage = lazy(() => import('@/pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })))
+
+function AuthWatcher() {
+  const { isAuthenticated } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  useEffect(() => {
+    if (!isAuthenticated && location.pathname !== '/login') {
+      navigate('/login', { replace: true, state: { from: location } })
+    }
+  }, [isAuthenticated, location, navigate])
+
+  return null
+}
+
+function RouteSuspense({ children }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[50vh] flex items-center justify-center p-6">
+          <LoadingState message="Loading view..." />
+        </div>
+      }
+    >
+      {children}
+    </Suspense>
+  )
+}
 
 export default function App() {
   return (
-    <Routes>
+    <>
+      <AuthWatcher />
+      <Routes>
       {/* Public Authentication Route */}
-      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/login"
+        element={
+          <RouteSuspense>
+            <LoginPage />
+          </RouteSuspense>
+        }
+      />
 
       {/* Protected Operations Application Routes */}
       <Route
@@ -28,7 +69,9 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AppLayout>
-              <OverviewPage />
+              <RouteSuspense>
+                <OverviewPage />
+              </RouteSuspense>
             </AppLayout>
           </ProtectedRoute>
         }
@@ -38,7 +81,9 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AppLayout>
-              <CrowdEntriesPage />
+              <RouteSuspense>
+                <CrowdEntriesPage />
+              </RouteSuspense>
             </AppLayout>
           </ProtectedRoute>
         }
@@ -49,10 +94,13 @@ export default function App() {
         path="*"
         element={
           <AppLayout>
-            <NotFoundPage />
+            <RouteSuspense>
+              <NotFoundPage />
+            </RouteSuspense>
           </AppLayout>
         }
       />
     </Routes>
+    </>
   )
 }

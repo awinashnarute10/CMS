@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { shouldRetryQuery } from '@/lib/queryClient'
 import { computeRangeFromPreset, TIME_PRESETS } from '@/components/common/TimeRangeSelector'
 import { analyticsKeys } from '@/hooks/useAnalytics'
+import { formatDwellDuration } from '@/lib/utils'
 
 describe('TanStack Query Policies & Keys', () => {
   it('never retries 4xx client, authentication, or validation errors', () => {
@@ -86,5 +87,16 @@ describe('Data Incompleteness & Formatting Safeguards', () => {
     const p3End = Math.min(3 * pageSize, totalRecords)
     expect(p3Start).toBe(101)
     expect(p3End).toBe(142)
+  })
+
+  it('formats dwell duration into padded human-readable "MM min SS secs" format', () => {
+    // 8.38333 minutes = 503 seconds = 8 mins 23 secs -> "08 min 23 secs"
+    expect(formatDwellDuration(8.38333)).toBe('08 min 23 secs')
+    expect(formatDwellDuration(18.5)).toBe('18 min 30 secs')
+    expect(formatDwellDuration(0)).toBe('00 min 00 secs')
+    expect(formatDwellDuration(0.0833)).toBe('00 min 05 secs')
+    expect(formatDwellDuration(null)).toBeNull()
+    expect(formatDwellDuration(undefined)).toBeNull()
+    expect(formatDwellDuration(-5)).toBeNull()
   })
 })

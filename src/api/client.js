@@ -70,9 +70,60 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
+export function dispatchUnauthorized() {
+  clearStoredToken()
+  unauthorizedListeners.forEach((fn) => {
+    try {
+      fn()
+    } catch {
+      // ignore callback error
+    }
+  })
+}
+
+export function isAuthEvictionResponse(status, data) {
+  if (status === 401 || status === 403) return true
+  const msg = (
+    data?.message ||
+    data?.errorMessage ||
+    data?.error ||
+    (typeof data === 'string' ? data : '')
+  ).toLowerCase()
+
+  if (
+    msg.includes('missing authorization header') ||
+    msg.includes('invalid or expired token') ||
+    msg.includes('expired token') ||
+    msg.includes('token expired') ||
+    msg.includes('jwt expired') ||
+    msg.includes('unauthorized') ||
+    msg.includes('invalid token')
+  ) {
+    return true
+  }
+  return false
+}
+
 // Intercept responses for predictable, normalized error objects
 apiClient.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    const data = response?.data
+    const status = response?.status
+    const url = response?.config?.url || ''
+    const isLoginEndpoint = url.includes('/auth/login')
+
+    // Catch cases where API returns 200 OK but payload indicates missing/invalid token
+    if (isAuthEvictionResponse(status, data) && !isLoginEndpoint) {
+      dispatchUnauthorized()
+      return Promise.reject({
+        status: 401,
+        message: data?.message || data?.errorMessage || 'Invalid or expired token',
+        data,
+        isAuthError: true,
+      })
+    }
+    return data
+  },
   (error) => {
     // Ignore aborted requests without triggering auth eviction
     if (axios.isCancel(error)) {
@@ -84,6 +135,7 @@ apiClient.interceptors.response.use(
 
     const status = error.response?.status
     const data = error.response?.data
+    const url = error.config?.url || ''
     const isNetworkError = !error.response && Boolean(error.request)
 
     // Normalize user-safe error message
@@ -106,15 +158,11 @@ apiClient.interceptors.response.use(
       message = error.message
     }
 
-    if (status === 401) {
-      clearStoredToken()
-      unauthorizedListeners.forEach((fn) => {
-        try {
-          fn()
-        } catch {
-          // ignore callback error
-        }
-      })
+    const isLoginEndpoint = url.includes('/auth/login')
+    const shouldEvict = isAuthEvictionResponse(status, data) && !isLoginEndpoint
+
+    if (shouldEvict) {
+      dispatchUnauthorized()
     }
 
     return Promise.reject({
@@ -122,7 +170,7 @@ apiClient.interceptors.response.use(
       message,
       data,
       isNetworkError,
-      isAuthError: status === 401 || status === 403,
+      isAuthError: status === 401 || status === 403 || shouldEvict,
       isClientError: typeof status === 'number' && status >= 400 && status < 500,
     })
   }

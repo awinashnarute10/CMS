@@ -32,7 +32,7 @@ export function DataTable({
 }) {
   if (isError) {
     return (
-      <div className="rounded-md border border-border bg-card p-6 flex items-center justify-center">
+      <div className="rounded-lg border border-border bg-card p-6 flex items-center justify-center shadow-subtle">
         <ErrorState message={errorMessage} onRetry={onRetry} />
       </div>
     )
@@ -47,7 +47,7 @@ export function DataTable({
 
   return (
     <div className={cn('space-y-3', className)}>
-      <div className="relative rounded-md border border-border bg-card overflow-hidden">
+      <div className="relative rounded-lg border border-border bg-card shadow-subtle overflow-hidden">
         {/* Subtle background fetching progress banner */}
         {isFetching && !isLoading && (
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-primary/20 overflow-hidden z-10">
@@ -58,12 +58,12 @@ export function DataTable({
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="hover:bg-transparent border-b border-border bg-secondary/30">
+              <TableRow className="hover:bg-transparent border-b border-border bg-muted/60">
                 {columns.map((col) => (
                   <TableHead
                     key={col.key || col.header}
                     className={cn(
-                      'h-10 text-xs font-semibold text-muted-foreground uppercase tracking-wider',
+                      'h-11 px-4 text-xs font-bold text-foreground uppercase tracking-wider',
                       col.align === 'right' && 'text-right',
                       col.align === 'center' && 'text-center',
                       col.className
@@ -79,8 +79,8 @@ export function DataTable({
                 Array.from({ length: 8 }).map((_, rIdx) => (
                   <TableRow key={`skeleton-row-${rIdx}`} className="border-b border-border">
                     {columns.map((col, cIdx) => (
-                      <TableCell key={`skeleton-cell-${cIdx}`} className="py-3">
-                        <Skeleton className="h-4 w-full max-w-[120px]" />
+                      <TableCell key={`skeleton-cell-${cIdx}`} className="py-3.5 px-4">
+                        <Skeleton className="h-4 w-full max-w-[120px] bg-muted" />
                       </TableCell>
                     ))}
                   </TableRow>
@@ -95,7 +95,7 @@ export function DataTable({
                 data.map((row, rowIdx) => (
                   <TableRow
                     key={row.personId ? `${row.personId}-${row.entryUtc || rowIdx}` : `row-${rowIdx}`}
-                    className="border-b border-border hover:bg-secondary/40 transition-colors"
+                    className="border-b border-border hover:bg-muted/40 transition-colors"
                   >
                     {columns.map((col) => {
                       const value = row[col.key]
@@ -103,7 +103,7 @@ export function DataTable({
                         <TableCell
                           key={col.key || col.header}
                           className={cn(
-                            'py-3 text-xs text-foreground',
+                            'py-3.5 px-4 text-xs text-foreground',
                             col.align === 'right' && 'text-right',
                             col.align === 'center' && 'text-center',
                             col.className
@@ -155,7 +155,7 @@ export function DataTable({
               size="sm"
               disabled={pageNumber <= 1 || isLoading}
               onClick={() => onPageChange?.(1)}
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 bg-card border-border text-foreground hover:border-primary hover:text-primary rounded-lg shadow-subtle"
               aria-label="Go to first page"
             >
               <ChevronsLeft className="h-3.5 w-3.5" />
@@ -167,7 +167,7 @@ export function DataTable({
               size="sm"
               disabled={pageNumber <= 1 || isLoading}
               onClick={() => onPageChange?.(pageNumber - 1)}
-              className="h-8 px-2.5 text-xs gap-1"
+              className="h-8 px-2.5 text-xs gap-1 bg-card border-border text-foreground hover:border-primary hover:text-primary rounded-lg shadow-subtle"
               aria-label="Go to previous page"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -180,7 +180,7 @@ export function DataTable({
               size="sm"
               disabled={pageNumber >= totalPages || isLoading}
               onClick={() => onPageChange?.(pageNumber + 1)}
-              className="h-8 px-2.5 text-xs gap-1"
+              className="h-8 px-2.5 text-xs gap-1 bg-card border-border text-foreground hover:border-primary hover:text-primary rounded-lg shadow-subtle"
               aria-label="Go to next page"
             >
               <span className="hidden sm:inline">Next</span>
@@ -193,7 +193,7 @@ export function DataTable({
               size="sm"
               disabled={pageNumber >= totalPages || isLoading}
               onClick={() => onPageChange?.(totalPages)}
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 bg-card border-border text-foreground hover:border-primary hover:text-primary rounded-lg shadow-subtle"
               aria-label="Go to last page"
             >
               <ChevronsRight className="h-3.5 w-3.5" />

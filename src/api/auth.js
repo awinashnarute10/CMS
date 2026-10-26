@@ -22,10 +22,28 @@ export function extractToken(response) {
 
 export async function login({ email, password }) {
   const response = await apiClient.post('/auth/login', { email, password })
+  
+  // If response contains an error message or fails to provide a token
+  const errorMessage = response?.errorMessage || response?.message || response?.error
   const token = extractToken(response)
-  if (token) {
-    setStoredToken(token)
+
+  if (errorMessage && !token) {
+    const error = new Error(errorMessage)
+    error.status = 401
+    error.isAuthError = true
+    error.data = response
+    throw error
   }
+
+  if (!token) {
+    const error = new Error('No authentication token received from server')
+    error.status = 401
+    error.isAuthError = true
+    error.data = response
+    throw error
+  }
+
+  setStoredToken(token)
   return response
 }
 

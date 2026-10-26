@@ -19,11 +19,11 @@ export function ChartCard({
   contentClassName,
 }) {
   return (
-    <Card className={cn('border border-border bg-card shadow-none transition-colors', className)}>
+    <Card className={cn('border border-border bg-card rounded-lg shadow-subtle transition-colors', className)}>
       <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-3">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-sm md:text-base font-semibold tracking-tight text-foreground">
+            <CardTitle className="text-base font-semibold tracking-tight text-foreground">
               {title}
             </CardTitle>
             {badge}
@@ -43,7 +43,7 @@ export function ChartCard({
       <CardContent className={cn('pt-1', contentClassName)}>
         {isLoading ? (
           <div className="h-[280px] flex items-center justify-center">
-            <LoadingState message="Rendering analytics series..." />
+            <LoadingState message="Loading analytics data..." />
           </div>
         ) : isError ? (
           <div className="h-[280px] flex items-center justify-center p-4">
@@ -51,7 +51,7 @@ export function ChartCard({
           </div>
         ) : isEmpty ? (
           <div className="h-[280px] flex items-center justify-center">
-            <EmptyState title="No chart data" description="No simulation activity recorded in this time range." />
+            <EmptyState title="No data available" description="No crowd data recorded for this time range." />
           </div>
         ) : (
           children

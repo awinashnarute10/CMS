@@ -1,9 +1,4 @@
 import { apiClient } from './client'
-import {
-  generateFixtureOccupancy,
-  generateFixtureDemographics,
-  generateFixtureEntryExitRecords,
-} from './fixtures'
 
 /**
  * Get average dwell duration (minutes) for a site within a period.
@@ -12,15 +7,6 @@ import {
  * @param {Object} [options] - Optional axios config (e.g. AbortSignal)
  */
 export async function getAverageDwell({ siteId, fromUtc, toUtc }, options = {}) {
-  if (import.meta.env.VITE_USE_FIXTURES === 'true') {
-    return {
-      siteId,
-      fromUtc,
-      toUtc,
-      avgDwellMinutes: 34.5,
-      dwellRecords: 890,
-    }
-  }
   return apiClient.post(
     '/analytics/dwell',
     { siteId, fromUtc, toUtc },
@@ -38,14 +24,6 @@ export const getDwell = getAverageDwell
  * @param {Object} [options] - Optional axios config
  */
 export async function getFootfall({ siteId, fromUtc, toUtc }, options = {}) {
-  if (import.meta.env.VITE_USE_FIXTURES === 'true') {
-    return {
-      siteId,
-      fromUtc,
-      toUtc,
-      footfall: 1420,
-    }
-  }
   return apiClient.post(
     '/analytics/footfall',
     { siteId, fromUtc, toUtc },
@@ -79,9 +57,6 @@ export async function getTodaysFootfall({ siteId }, options = {}) {
  * @param {Object} [options] - Optional axios config
  */
 export async function getOccupancyTimeSeries({ siteId, fromUtc, toUtc }, options = {}) {
-  if (import.meta.env.VITE_USE_FIXTURES === 'true') {
-    return generateFixtureOccupancy(fromUtc, toUtc)
-  }
   return apiClient.post(
     '/analytics/occupancy',
     { siteId, fromUtc, toUtc },
@@ -98,9 +73,6 @@ export const getOccupancy = getOccupancyTimeSeries
  * @param {Object} [options] - Optional axios config
  */
 export async function getDemographics({ siteId, fromUtc, toUtc }, options = {}) {
-  if (import.meta.env.VITE_USE_FIXTURES === 'true') {
-    return generateFixtureDemographics(fromUtc, toUtc)
-  }
   return apiClient.post(
     '/analytics/demographics',
     { siteId, fromUtc, toUtc },
@@ -118,9 +90,6 @@ export async function getEntryExitRecords(
   { siteId, fromUtc, toUtc, pageSize = 50, pageNumber = 1 },
   options = {}
 ) {
-  if (import.meta.env.VITE_USE_FIXTURES === 'true') {
-    return generateFixtureEntryExitRecords({ siteId, fromUtc, toUtc, pageSize, pageNumber })
-  }
   return apiClient.post(
     '/analytics/entry-exit',
     {

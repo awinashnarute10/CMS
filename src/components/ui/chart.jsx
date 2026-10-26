@@ -85,7 +85,7 @@ export function ChartTooltip({
   return (
     <div
       className={cn(
-        'min-w-[8rem] rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-md',
+        'min-w-[8rem] rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-none',
         className
       )}
     >

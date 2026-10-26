@@ -8,7 +8,7 @@
 export const FIXTURE_SITES = [
   {
     siteId: 'site-001',
-    name: 'Kloudspot Innovation Center',
+    name: 'CMS Innovation Center',
     city: 'Sunnyvale',
     country: 'United States',
     timezone: 'America/Los_Angeles',

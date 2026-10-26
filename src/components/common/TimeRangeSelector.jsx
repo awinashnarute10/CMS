@@ -23,7 +23,7 @@ export function TimeRangeSelector({
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1 p-0.5 rounded-md bg-secondary border border-border text-xs',
+        'inline-flex items-center gap-1 p-1 rounded-lg bg-card border border-border text-xs shadow-subtle',
         className
       )}
       role="group"
@@ -40,10 +40,10 @@ export function TimeRangeSelector({
             type="button"
             onClick={() => onChange?.(preset.id)}
             className={cn(
-              'px-2.5 py-1 rounded text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
+              'px-2.5 py-1 rounded-md text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary',
               isActive
-                ? 'bg-card text-foreground shadow-xs font-semibold'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             )}
             aria-pressed={isActive}
           >

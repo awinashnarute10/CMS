@@ -13,7 +13,7 @@ function Table({ className, ref, ...props }) {
 }
 
 function TableHeader({ className, ref, ...props }) {
-  return <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+  return <thead ref={ref} className={cn("[&_tr]:border-b bg-[#F6F7F8]", className)} {...props} />
 }
 
 function TableBody({ className, ref, ...props }) {
@@ -44,7 +44,7 @@ function TableRow({ className, ref, ...props }) {
     <tr
       ref={ref}
       className={cn(
-        "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
+        "border-b border-border transition-colors hover:bg-muted/40 data-[state=selected]:bg-muted",
         className
       )}
       {...props}
@@ -57,7 +57,7 @@ function TableHead({ className, ref, ...props }) {
     <th
       ref={ref}
       className={cn(
-        "h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+        "h-11 px-4 text-left align-middle font-bold text-foreground text-xs uppercase tracking-wider [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}
@@ -69,7 +69,7 @@ function TableCell({ className, ref, ...props }) {
   return (
     <td
       ref={ref}
-      className={cn("p-4 align-middle [&:has([role=checkbox])]:pr-0", className)}
+      className={cn("py-3.5 px-4 align-middle text-xs text-foreground [&:has([role=checkbox])]:pr-0", className)}
       {...props}
     />
   )
@@ -79,7 +79,7 @@ function TableCaption({ className, ref, ...props }) {
   return (
     <caption
       ref={ref}
-      className={cn("mt-4 text-sm text-muted-foreground", className)}
+      className={cn("mt-4 text-xs text-muted-foreground", className)}
       {...props}
     />
   )

@@ -11,25 +11,25 @@ export function ErrorState({
   return (
     <div
       className={cn(
-        'p-8 rounded-md border border-[var(--status-danger-border)] bg-[var(--status-danger-bg)] flex flex-col items-center justify-center text-center space-y-3',
+        'p-8 rounded-lg border border-[#F5C6C6] bg-[#FDF0F0] flex flex-col items-center justify-center text-center space-y-3',
         className
       )}
     >
-      <div className="h-9 w-9 rounded-md bg-card border border-[var(--status-danger-border)] flex items-center justify-center text-[var(--status-danger)]">
+      <div className="h-9 w-9 rounded-lg bg-white border border-[#F5C6C6] flex items-center justify-center text-[#C62828]">
         <AlertCircle className="h-5 w-5" />
       </div>
       <div className="space-y-1">
-        <h4 className="text-sm font-semibold text-[var(--status-danger)]">{title}</h4>
-        <p className="text-xs text-muted-foreground max-w-sm">{message}</p>
+        <h4 className="text-sm font-semibold text-[#C62828]">{title}</h4>
+        <p className="text-xs text-[#777B80] max-w-sm">{message}</p>
       </div>
       {onRetry && (
         <Button
           variant="outline"
           size="sm"
           onClick={onRetry}
-          className="h-8 text-xs gap-1.5 border-[var(--status-danger-border)] text-foreground hover:bg-card"
+          className="h-8 text-xs gap-1.5 border-[#F5C6C6] bg-white text-[#202124] hover:bg-[#FDF0F0] rounded-lg shadow-subtle"
         >
-          <RotateCcw className="h-3.5 w-3.5" />
+          <RotateCcw className="h-3.5 w-3.5 text-[#C62828]" />
           <span>Retry Request</span>
         </Button>
       )}

@@ -26,6 +26,7 @@ import {
 import { useSite } from '@/context/SiteContext'
 import { useEntryExitQuery, analyticsKeys } from '@/hooks/useAnalytics'
 import { getEntryExitRecords } from '@/api/analytics'
+import { formatDwellDuration } from '@/lib/utils'
 
 function formatTimestamp(utcMs, localFallback) {
   if (typeof utcMs === 'number' && !isNaN(utcMs)) {
@@ -124,25 +125,39 @@ export function CrowdEntriesPage() {
     })
   }, [pageData?.records, zoneFilter, searchQuery])
 
-  // Table columns definition
+  // Table columns definition with small circular user avatar, readable dark values, aligned columns
   const columns = useMemo(
     () => [
       {
         key: 'personName',
         header: 'Visitor Name',
-        className: 'min-w-[160px]',
-        render: (val, row) => (
-          <div>
-            <span className="font-medium text-foreground block">
-              {val || 'Anonymous Visitor'}
-            </span>
-            {row.personId && (
-              <span className="text-[11px] text-muted-foreground font-mono block mt-0.5">
-                {row.personId}
-              </span>
-            )}
-          </div>
-        ),
+        className: 'min-w-[200px]',
+        render: (val, row) => {
+          const name = val || 'Anonymous Visitor'
+          const initials = name
+            .split(' ')
+            .map((n) => n[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase()
+          return (
+            <div className="flex items-center gap-3">
+              <div className="h-7 w-7 rounded-full bg-secondary border border-border text-primary font-semibold text-[11px] flex items-center justify-center shrink-0">
+                {initials}
+              </div>
+              <div className="min-w-0">
+                <span className="font-semibold text-foreground block truncate">
+                  {name}
+                </span>
+                {row.personId && (
+                  <span className="text-[11px] text-muted-foreground font-mono block mt-0.5">
+                    {row.personId}
+                  </span>
+                )}
+              </div>
+            </div>
+          )
+        },
       },
       {
         key: 'gender',
@@ -152,12 +167,9 @@ export function CrowdEntriesPage() {
           if (!val) return <span className="text-muted-foreground">—</span>
           const normalized = String(val).toLowerCase()
           return (
-            <StatusBadge
-              status="neutral"
-              label={normalized === 'male' ? 'Male' : normalized === 'female' ? 'Female' : val}
-              showDot={false}
-              className="text-[11px] capitalize"
-            />
+            <span className="text-foreground capitalize font-medium">
+              {normalized === 'male' ? 'Male' : normalized === 'female' ? 'Female' : val}
+            </span>
           )
         },
       },
@@ -185,7 +197,7 @@ export function CrowdEntriesPage() {
           if (!formatted) return <span className="text-muted-foreground">—</span>
           return (
             <div>
-              <span className="font-mono text-foreground tabular-nums block">
+              <span className="font-mono text-foreground font-medium tabular-nums block">
                 {formatted.time}
               </span>
               {formatted.date && (
@@ -202,14 +214,13 @@ export function CrowdEntriesPage() {
         header: 'Exit Time',
         className: 'min-w-[140px]',
         render: (_, row) => {
-          // Do not assume missing exit time means still inside unless contract supports it
           const formatted = formatTimestamp(row.exitUtc, row.exitLocal)
           if (!formatted) {
             return <span className="text-muted-foreground font-mono">—</span>
           }
           return (
             <div>
-              <span className="font-mono text-foreground tabular-nums block">
+              <span className="font-mono text-foreground font-medium tabular-nums block">
                 {formatted.time}
               </span>
               {formatted.date && (
@@ -225,13 +236,13 @@ export function CrowdEntriesPage() {
         key: 'dwellMinutes',
         header: 'Dwell Time',
         align: 'right',
-        className: 'w-[120px]',
+        className: 'w-[140px]',
         render: (val) => {
-          // Do not calculate dwell time from incomplete data unless explicitly supplied
-          if (typeof val === 'number' && !isNaN(val)) {
+          const formatted = formatDwellDuration(val)
+          if (formatted) {
             return (
               <span className="font-mono text-foreground font-medium tabular-nums">
-                {val.toFixed(1)} min
+                {formatted}
               </span>
             )
           }
@@ -243,19 +254,16 @@ export function CrowdEntriesPage() {
         header: 'Security Level',
         align: 'center',
         className: 'w-[120px]',
-        render: (val) => (
-          <StatusBadge
-            status={
-              val === 'high'
-                ? 'danger'
-                : val === 'medium'
-                ? 'warning'
-                : 'neutral'
-            }
-            label={val ? val.toUpperCase() : 'NORMAL'}
-            showDot={false}
-          />
-        ),
+        render: (val) => {
+          const sev = val === 'high' ? 'high' : val === 'medium' ? 'medium' : 'low'
+          return (
+            <StatusBadge
+              status={sev}
+              label={sev.toUpperCase()}
+              showDot={false}
+            />
+          )
+        },
       },
     ],
     []
@@ -264,11 +272,11 @@ export function CrowdEntriesPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="Crowd Entries & Sessions"
+        title="Crowd Entries"
         description={
           selectedSite
             ? `Viewing paginated entry–exit records for ${selectedSite.name}.`
-            : 'Combined visitor entry and exit session records.'
+            : 'Visitor entry and exit session records.'
         }
         badge={
           selectedSite ? (
@@ -286,10 +294,10 @@ export function CrowdEntriesPage() {
               size="sm"
               onClick={() => refetch()}
               disabled={isFetching}
-              className="h-8 px-2.5 text-xs gap-1.5"
+              className="h-9 px-3 text-xs gap-1.5 bg-card border-border text-foreground hover:border-primary hover:text-primary rounded-lg shadow-subtle transition-colors"
               aria-label="Refresh entry logs"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin text-primary' : ''}`} />
               <span className="hidden sm:inline">Refresh</span>
             </Button>
           </div>
@@ -298,51 +306,51 @@ export function CrowdEntriesPage() {
 
       {/* Summary KPI Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-md border border-border bg-card p-3 flex items-center justify-between">
+        <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between shadow-subtle">
           <div>
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block">
-              Total Logged Records
+            <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold block">
+              Total Entries
             </span>
-            <span className="text-xl font-semibold text-foreground font-mono tabular-nums mt-0.5 block">
+            <span className="text-2xl font-semibold text-foreground font-mono tabular-nums mt-1 block">
               {totalRecords.toLocaleString()}
             </span>
           </div>
-          <div className="h-8 w-8 rounded-md bg-secondary flex items-center justify-center text-muted-foreground">
+          <div className="h-9 w-9 rounded-lg bg-secondary border border-border flex items-center justify-center text-muted-foreground">
             <Footprints className="h-4 w-4" />
           </div>
         </div>
 
-        <div className="rounded-md border border-border bg-card p-3 flex items-center justify-between">
+        <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between shadow-subtle">
           <div>
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block">
-              Page View
+            <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold block">
+              Page
             </span>
-            <span className="text-xl font-semibold text-foreground font-mono tabular-nums mt-0.5 block">
+            <span className="text-2xl font-semibold text-foreground font-mono tabular-nums mt-1 block">
               {pageNumber} <span className="text-xs text-muted-foreground font-normal">/ {totalPages}</span>
             </span>
           </div>
-          <div className="h-8 w-8 rounded-md bg-secondary flex items-center justify-center text-muted-foreground">
+          <div className="h-9 w-9 rounded-lg bg-secondary border border-border flex items-center justify-center text-muted-foreground">
             <Clock className="h-4 w-4" />
           </div>
         </div>
 
-        <div className="rounded-md border border-border bg-card p-3 flex items-center justify-between">
+        <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between shadow-subtle">
           <div>
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold block">
-              Current Page Records
+            <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold block">
+              Records Shown
             </span>
-            <span className="text-xl font-semibold text-foreground font-mono tabular-nums mt-0.5 block">
+            <span className="text-2xl font-semibold text-foreground font-mono tabular-nums mt-1 block">
               {filteredRecords.length}
             </span>
           </div>
-          <div className="h-8 w-8 rounded-md bg-secondary flex items-center justify-center text-muted-foreground">
+          <div className="h-9 w-9 rounded-lg bg-secondary border border-border flex items-center justify-center text-muted-foreground">
             <UserCheck className="h-4 w-4" />
           </div>
         </div>
       </div>
 
       {/* Filters Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-md border border-border bg-card">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-lg border border-border bg-card shadow-subtle">
         {/* Search */}
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -351,7 +359,7 @@ export function CrowdEntriesPage() {
             placeholder="Search visitor name or ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 h-8 text-xs bg-background"
+            className="pl-8 h-9 text-xs bg-card border-border text-foreground placeholder:text-muted-foreground rounded-lg focus:border-primary focus:ring-1 focus:ring-primary"
           />
         </div>
 
@@ -361,13 +369,13 @@ export function CrowdEntriesPage() {
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Filter className="h-3.5 w-3.5 hidden sm:block" />
               <Select value={zoneFilter} onValueChange={setZoneFilter}>
-                <SelectTrigger className="h-8 text-xs w-[150px] bg-background">
+                <SelectTrigger className="h-9 text-xs w-[150px] bg-card border-border text-foreground rounded-lg hover:border-primary">
                   <SelectValue placeholder="All Zones" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Zones</SelectItem>
+                <SelectContent className="bg-popover border-border shadow-md rounded-lg">
+                  <SelectItem value="all" className="focus:bg-accent focus:text-accent-foreground">All Zones</SelectItem>
                   {selectedSite.zones.map((z) => (
-                    <SelectItem key={z.zoneId} value={z.zoneId}>
+                    <SelectItem key={z.zoneId} value={z.zoneId} className="focus:bg-accent focus:text-accent-foreground">
                       {z.name}
                     </SelectItem>
                   ))}
@@ -379,13 +387,13 @@ export function CrowdEntriesPage() {
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span className="hidden md:inline">Rows:</span>
             <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-              <SelectTrigger className="h-8 text-xs w-[75px] bg-background">
+              <SelectTrigger className="h-9 text-xs w-[75px] bg-card border-border text-foreground rounded-lg hover:border-primary">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
+              <SelectContent className="bg-popover border-border shadow-md rounded-lg">
+                <SelectItem value="25" className="focus:bg-accent focus:text-accent-foreground">25</SelectItem>
+                <SelectItem value="50" className="focus:bg-accent focus:text-accent-foreground">50</SelectItem>
+                <SelectItem value="100" className="focus:bg-accent focus:text-accent-foreground">100</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -401,7 +409,7 @@ export function CrowdEntriesPage() {
         isError={isError}
         errorMessage={error?.message}
         onRetry={() => refetch()}
-        emptyTitle="No Visitor Entries Recorded"
+        emptyTitle="No visitor records found"
         emptyDescription={
           searchQuery
             ? 'No records match your search filter on this page.'

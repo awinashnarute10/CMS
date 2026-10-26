@@ -1,65 +1,58 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 
 const THEME_STORAGE_KEY = 'cms-theme'
 
 const ThemeContext = createContext({
-  theme: 'system',
+  theme: 'light',
   resolvedTheme: 'light',
   setTheme: () => null,
+  toggleTheme: () => null,
 })
 
-export function ThemeProvider({ children, defaultTheme = 'system' }) {
+export function ThemeProvider({ children, defaultTheme = 'light' }) {
   const [theme, setTheme] = useState(() => {
     try {
-      return localStorage.getItem(THEME_STORAGE_KEY) || defaultTheme
+      const stored = localStorage.getItem(THEME_STORAGE_KEY)
+      if (stored === 'dark' || stored === 'light') return stored
+      return defaultTheme
     } catch {
       return defaultTheme
     }
   })
 
   const [resolvedTheme, setResolvedTheme] = useState(() => {
-    if (typeof window === 'undefined') return 'light'
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const stored = localStorage.getItem(THEME_STORAGE_KEY) || defaultTheme
-    return stored === 'dark' || (stored === 'system' && prefersDark) ? 'dark' : 'light'
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem(THEME_STORAGE_KEY) : null
+      return stored === 'dark' ? 'dark' : 'light'
+    } catch {
+      return defaultTheme
+    }
   })
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
+  }, [])
 
   useEffect(() => {
     const root = document.documentElement
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const isDark = theme === 'dark'
+    setResolvedTheme(isDark ? 'dark' : 'light')
 
-    const applyTheme = () => {
-      const isDark = theme === 'dark' || (theme === 'system' && mediaQuery.matches)
-      const currentResolved = isDark ? 'dark' : 'light'
-      setResolvedTheme(currentResolved)
-
-      if (isDark) {
-        root.classList.add('dark')
-      } else {
-        root.classList.remove('dark')
-      }
+    if (isDark) {
+      root.classList.add('dark')
+    } else {
+      root.classList.remove('dark')
     }
-
-    applyTheme()
 
     try {
       localStorage.setItem(THEME_STORAGE_KEY, theme)
     } catch {
       // Storage unavailable or disabled
     }
-
-    const handleChange = () => {
-      if (theme === 'system') {
-        applyTheme()
-      }
-    }
-
-    mediaQuery.addEventListener('change', handleChange)
-    return () => mediaQuery.removeEventListener('change', handleChange)
   }, [theme])
 
   return (
-    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   )

@@ -10,17 +10,20 @@ export function KpiCard({
   badge,
   icon: Icon,
   isLoading = false,
+  isError = false,
+  errorMessage,
+  onRetry,
   className,
 }) {
   return (
-    <Card className={cn('border border-border bg-card shadow-none transition-colors', className)}>
+    <Card className={cn('border border-border bg-card rounded-lg shadow-subtle transition-colors', className)}>
       <CardContent className="p-5">
         <div className="flex items-center justify-between gap-2">
           <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             {title}
           </span>
           {Icon && (
-            <div className="h-8 w-8 rounded-md bg-secondary border border-border flex items-center justify-center text-muted-foreground">
+            <div className="h-8 w-8 rounded-lg bg-secondary border border-border flex items-center justify-center text-muted-foreground shrink-0">
               <Icon className="h-4 w-4" />
             </div>
           )}
@@ -28,13 +31,33 @@ export function KpiCard({
 
         {isLoading ? (
           <div className="mt-3 space-y-2">
-            <Skeleton className="h-8 w-24" />
-            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-8 w-24 bg-muted" />
+            <Skeleton className="h-4 w-32 bg-muted" />
+          </div>
+        ) : isError ? (
+          <div className="mt-3 flex items-center justify-between gap-2 py-1">
+            <div className="space-y-0.5 min-w-0">
+              <span className="text-xs font-medium text-destructive block truncate">
+                Unavailable
+              </span>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {errorMessage || 'Failed to load metric'}
+              </p>
+            </div>
+            {onRetry && (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="text-xs font-medium text-primary hover:underline shrink-0"
+              >
+                Retry
+              </button>
+            )}
           </div>
         ) : (
           <>
             <div className="mt-3 flex items-baseline gap-1.5">
-              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground tabular-nums">
+              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground font-mono tabular-nums">
                 {value ?? '—'}
               </span>
               {unit && (
@@ -45,10 +68,10 @@ export function KpiCard({
             </div>
 
             {(subtitle || badge) && (
-              <div className="mt-3 flex items-center gap-2 text-xs">
+              <div className="mt-3 flex items-center gap-2 text-xs flex-wrap">
                 {badge}
                 {subtitle && (
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground truncate">
                     {subtitle}
                   </span>
                 )}

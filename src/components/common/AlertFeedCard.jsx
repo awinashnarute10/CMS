@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 export function AlertFeedCard({
   alerts = [],
   status = 'disconnected',
-  title = 'Live Security Alerts',
+  title = 'Security Alerts',
   onDismiss,
   onClear,
   className,
@@ -15,10 +15,10 @@ export function AlertFeedCard({
   const isConnected = status === 'connected'
 
   return (
-    <Card className={cn('border border-border bg-card shadow-none transition-colors flex flex-col', className)}>
+    <Card className={cn('border border-border bg-card rounded-lg shadow-subtle transition-colors flex flex-col', className)}>
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <div className="flex items-center gap-2">
-          <CardTitle className="text-sm md:text-base font-semibold tracking-tight text-foreground flex items-center gap-1.5">
+          <CardTitle className="text-base font-semibold tracking-tight text-foreground flex items-center gap-1.5">
             <Bell className="h-4 w-4 text-muted-foreground" />
             <span>{title}</span>
           </CardTitle>
@@ -30,20 +30,18 @@ export function AlertFeedCard({
         </div>
 
         <div className="flex items-center gap-2">
-          {isConnected ? (
-            <StatusBadge status="success" label="LIVE" />
-          ) : status === 'connecting' ? (
-            <StatusBadge status="warning" label="CONNECTING" />
-          ) : (
-            <StatusBadge status="neutral" label="OFFLINE" />
-          )}
+          {status === 'error' || status === 'connecting' ? (
+            <StatusBadge status="warning" label="Reconnecting" />
+          ) : !isConnected ? (
+            <StatusBadge status="neutral" label="Offline" />
+          ) : null}
 
           {alerts.length > 0 && onClear && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onClear}
-              className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+              className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground rounded-md"
             >
               Clear
             </Button>
@@ -56,46 +54,49 @@ export function AlertFeedCard({
           <div className="py-8 my-auto flex flex-col items-center justify-center text-center space-y-2">
             {!isConnected ? (
               <>
-                <div className="h-9 w-9 rounded-md bg-secondary border border-border flex items-center justify-center text-muted-foreground">
+                <div className="h-9 w-9 rounded-lg bg-secondary border border-border flex items-center justify-center text-muted-foreground">
                   <WifiOff className="h-4 w-4" />
                 </div>
-                <p className="text-xs font-medium text-foreground">
-                  Real-time Telemetry Offline
+                <p className="text-xs font-semibold text-foreground">
+                  {status === 'error' ? 'Reconnecting to Server' : 'Alert Feed Offline'}
                 </p>
                 <p className="text-[11px] text-muted-foreground max-w-xs">
-                  Socket.IO listener will automatically resume receiving live telemetry upon reconnect.
+                  {status === 'error'
+                    ? 'Attempting to re-establish connection with backend server.'
+                    : 'Real-time alert updates are paused until connection is restored.'}
                 </p>
               </>
             ) : (
               <>
-                <div className="h-9 w-9 rounded-md bg-[var(--status-success-bg)] border border-[var(--status-success-border)] flex items-center justify-center text-[var(--status-success)]">
+                <div className="h-9 w-9 rounded-lg bg-[var(--status-success-bg)] border border-[var(--status-success-border)] flex items-center justify-center text-[var(--status-success)]">
                   <ShieldCheck className="h-4 w-4" />
                 </div>
-                <p className="text-xs font-medium text-foreground">
+                <p className="text-xs font-semibold text-foreground">
                   All Zones Operating Normally
                 </p>
                 <p className="text-[11px] text-muted-foreground max-w-xs">
-                  Real-time stream connected. Zero active security or density alerts reported across monitored gates.
+                  No active security or capacity alerts across monitored zones.
                 </p>
               </>
             )}
           </div>
         ) : (
-          <div className="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
+          <div className="space-y-2 max-h-[175px] overflow-y-auto pr-1">
             {alerts.map((alert) => {
               const isHigh = alert.severity === 'high'
               const isMedium = alert.severity === 'medium'
+              const isLow = !isHigh && !isMedium
 
               return (
                 <div
                   key={alert.id}
                   className={cn(
-                    'p-3 rounded-md border flex items-start justify-between gap-3 text-xs transition-colors',
+                    'p-2.5 rounded-lg border flex items-start justify-between gap-3 text-xs transition-colors',
                     isHigh
-                      ? 'border-[var(--status-danger-border)] bg-[var(--status-danger-bg)]/30'
+                      ? 'border-[var(--status-danger-border)] bg-[var(--status-danger-bg)]/50'
                       : isMedium
-                      ? 'border-[var(--status-warning-border)] bg-[var(--status-warning-bg)]/30'
-                      : 'border-border bg-secondary/40'
+                      ? 'border-[var(--status-warning-border)] bg-[var(--status-warning-bg)]/50'
+                      : 'border-[var(--status-success-border)] bg-[var(--status-success-bg)]/40'
                   )}
                 >
                   <div className="flex items-start gap-2.5 min-w-0">
@@ -106,7 +107,7 @@ export function AlertFeedCard({
                           ? 'text-[var(--status-danger)]'
                           : isMedium
                           ? 'text-[var(--status-warning)]'
-                          : 'text-muted-foreground'
+                          : 'text-[var(--status-success)]'
                       )}
                     />
                     <div className="space-y-0.5 min-w-0">
@@ -134,8 +135,8 @@ export function AlertFeedCard({
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
                     <div className="flex items-center gap-1">
                       <StatusBadge
-                        status={isHigh ? 'danger' : isMedium ? 'warning' : 'neutral'}
-                        label={alert.severity?.toUpperCase() || 'INFO'}
+                        status={isHigh ? 'high' : isMedium ? 'medium' : 'low'}
+                        label={isHigh ? 'HIGH' : isMedium ? 'MEDIUM' : 'LOW'}
                         showDot={false}
                       />
                       {onDismiss && (

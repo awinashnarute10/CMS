@@ -15,13 +15,13 @@ export function EmptyState({
         className
       )}
     >
-      <div className="h-10 w-10 rounded-md bg-secondary border border-border flex items-center justify-center text-muted-foreground">
+      <div className="h-10 w-10 rounded-lg bg-[#F6F7F8] border border-[#D9DCDD] flex items-center justify-center text-[#777B80]">
         <Icon className="h-5 w-5" />
       </div>
       <div className="space-y-1">
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+        <h3 className="text-sm font-semibold text-[#202124]">{title}</h3>
         {description && (
-          <p className="text-xs text-muted-foreground max-w-sm leading-relaxed">
+          <p className="text-xs text-[#777B80] max-w-sm leading-relaxed">
             {description}
           </p>
         )}

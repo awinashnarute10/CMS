@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @theme {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -35,101 +36,105 @@
   --color-status-info-bg: var(--status-info-bg);
   --color-status-info-border: var(--status-info-border);
 
-  /* Radius tokens */
+  /* Radius tokens: 8-12px medium radius */
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
 @layer base {
   :root {
-    /* Emerald Enterprise - Light */
+    /* Kloudspot Figma Reference - Restrained Enterprise Light Theme */
     --background: #F6F7F8;
-    --foreground: #202923;
+    --foreground: #202124;
     --card: #FFFFFF;
-    --card-foreground: #202923;
+    --card-foreground: #202124;
     --popover: #FFFFFF;
-    --popover-foreground: #202923;
-    --primary: #247A52;
+    --popover-foreground: #202124;
+    --primary: #0B8F8B;
     --primary-foreground: #FFFFFF;
-    --secondary: #EDF2EE;
-    --secondary-foreground: #202923;
-    --muted: #EDF2EE;
-    --muted-foreground: #68736C;
-    --accent: #EDF2EE;
-    --accent-foreground: #202923;
+    --secondary: #F0F2F3;
+    --secondary-foreground: #202124;
+    --muted: #F0F2F3;
+    --muted-foreground: #777B80;
+    --accent: #EAF4F4;
+    --accent-foreground: #0B8F8B;
     --destructive: #C62828;
     --destructive-foreground: #FFFFFF;
-    --border: #E1E7E2;
-    --input: #E1E7E2;
-    --ring: #247A52;
-    --radius: 0.5rem;
+    --border: #D9DCDD;
+    --input: #D9DCDD;
+    --ring: #0B8F8B;
+    --radius: 0.5rem; /* 8px medium-radius corners */
 
-    /* Semantic Status (separate from primary brand accent) */
-    --status-success: #247A52;
-    --status-success-bg: #EAF4EE;
-    --status-success-border: #C8E3D2;
+    /* Reference Colors */
+    --sidebar-base: #17282B;
+    --sidebar-active: #718486;
+    --teal-accent: #0B8F8B;
+
+    /* Semantic Status */
+    --status-success: #16A34A;
+    --status-success-bg: #DCFCE7;
+    --status-success-border: #86EFAC;
     --status-warning: #B26A00;
     --status-warning-bg: #FFF8E6;
     --status-warning-border: #F7DC9E;
     --status-danger: #C62828;
     --status-danger-bg: #FDF0F0;
     --status-danger-border: #F5C6C6;
-    --status-info: #355E68;
-    --status-info-bg: #EDF5F7;
-    --status-info-border: #CFE2E6;
+    --status-info: #0B8F8B;
+    --status-info-bg: #EDF7F7;
+    --status-info-border: #CFE8E7;
 
-    /* Chart Solid Tokens (no gradients) */
-    --chart-occupancy: #247A52;
-    --chart-slate: #546E7A;
-    --chart-teal: #00897B;
+    /* Chart Solid Tokens (no gradients outside sidebar) */
+    --chart-occupancy: #0B8F8B;
+    --chart-slate: #718486;
+    --chart-teal: #0B8F8B;
     --chart-amber: #D97706;
-    --chart-male: #2563EB;
-    --chart-female: #DB2777;
+    --chart-male: #0B8F8B;
+    --chart-female: #D4738C;
   }
 
   .dark {
-    /* Emerald Enterprise - Dark */
-    --background: #111713;
-    --foreground: #EEF4EF;
-    --card: #19221C;
-    --card-foreground: #EEF4EF;
-    --popover: #19221C;
-    --popover-foreground: #EEF4EF;
-    --primary: #68C995;
-    --primary-foreground: #102117;
-    --secondary: #222E25;
-    --secondary-foreground: #EEF4EF;
-    --muted: #222E25;
-    --muted-foreground: #A1B0A5;
-    --accent: #222E25;
-    --accent-foreground: #EEF4EF;
+    /* Dark Theme */
+    --background: #111718;
+    --foreground: #F6F7F8;
+    --card: #182325;
+    --card-foreground: #F6F7F8;
+    --popover: #182325;
+    --popover-foreground: #F6F7F8;
+    --primary: #0B8F8B;
+    --primary-foreground: #FFFFFF;
+    --secondary: #223033;
+    --secondary-foreground: #F6F7F8;
+    --muted: #223033;
+    --muted-foreground: #8B989A;
+    --accent: #223033;
+    --accent-foreground: #0B8F8B;
     --destructive: #EF4444;
-    --destructive-foreground: #102117;
-    --border: #303D33;
-    --input: #303D33;
-    --ring: #68C995;
+    --destructive-foreground: #FFFFFF;
+    --border: #2D3D40;
+    --input: #2D3D40;
+    --ring: #0B8F8B;
 
-    /* Semantic Status (Dark) */
-    --status-success: #68C995;
-    --status-success-bg: #142E1E;
-    --status-success-border: #224D33;
+    --status-success: #22C55E;
+    --status-success-bg: #052E16;
+    --status-success-border: #14532D;
     --status-warning: #F59E0B;
     --status-warning-bg: #2C1F0A;
     --status-warning-border: #4A3512;
     --status-danger: #EF4444;
     --status-danger-bg: #2D1414;
     --status-danger-border: #4D2222;
-    --status-info: #2DD4BF;
-    --status-info-bg: #0D2724;
-    --status-info-border: #17433E;
+    --status-info: #14B8A6;
+    --status-info-bg: #0D2825;
+    --status-info-border: #164E48;
 
-    /* Chart Solid Tokens (Dark) */
-    --chart-occupancy: #68C995;
-    --chart-slate: #94A3B8;
-    --chart-teal: #2DD4BF;
+    --chart-occupancy: #14B8A6;
+    --chart-slate: #8B989A;
+    --chart-teal: #14B8A6;
     --chart-amber: #FBBF24;
-    --chart-male: #60A5FA;
+    --chart-male: #14B8A6;
     --chart-female: #F472B6;
   }
 }
@@ -142,7 +147,7 @@ body {
   background-color: var(--background);
   color: var(--foreground);
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -152,7 +157,39 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Strictly enforce no gradients anywhere */
-*, *::before, *::after {
-  background-image: none !important;
+/* Sidebar Gradient: dark teal-to-deep-green */
+.sidebar-gradient {
+  background: linear-gradient(180deg, #17282B 0%, #111F21 55%, #0B1517 100%);
+}
+
+/* Abstract geometric network pattern for sidebar */
+.sidebar-network-pattern {
+  background-image: url("data:image/svg+xml,%3Csvg width='240' height='240' viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cg stroke='rgba(255,255,255,0.04)' stroke-width='0.75' fill='none'%3E%3Cpath d='M20 40 L80 90 L160 50 L220 110 M80 90 L120 180 L200 150 M120 180 L40 210 M0 130 L70 140 L120 180 M160 50 L200 150 M80 90 L40 210'/%3E%3Cpath d='M220 110 L240 70 M40 210 L100 240 M160 50 L180 0 M20 40 L0 10'/%3E%3C/g%3E%3Cg fill='rgba(11,143,139,0.3)'%3E%3Ccircle cx='20' cy='40' r='2'/%3E%3Ccircle cx='80' cy='90' r='2.5'/%3E%3Ccircle cx='160' cy='50' r='2'/%3E%3Ccircle cx='220' cy='110' r='2.5'/%3E%3Ccircle cx='120' cy='180' r='2.5'/%3E%3Ccircle cx='200' cy='150' r='2'/%3E%3Ccircle cx='40' cy='210' r='2'/%3E%3Ccircle cx='70' cy='140' r='1.5'/%3E%3C/g%3E%3Cg fill='rgba(255,255,255,0.25)'%3E%3Ccircle cx='80' cy='90' r='1'/%3E%3Ccircle cx='120' cy='180' r='1'/%3E%3Ccircle cx='220' cy='110' r='1'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* Subtle shadows */
+.shadow-subtle {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+}
+
+/* Shake animation for input error feedback */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Respect user preference for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

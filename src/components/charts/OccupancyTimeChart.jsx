@@ -14,7 +14,7 @@ import { EmptyState } from '@/components/common/EmptyState'
 const chartConfig = {
   occupancy: {
     label: 'Occupancy',
-    color: 'var(--chart-occupancy)',
+    color: '#0B8F8B',
   },
 }
 
@@ -33,11 +33,40 @@ export function OccupancyTimeChart({ data = [], height = 280 }) {
         timeLabel = `T+${index}h`
       }
 
+      const rawCount =
+        typeof item.occupancy === 'number'
+          ? item.occupancy
+          : typeof item.avgOccupancy === 'number'
+          ? item.avgOccupancy
+          : typeof item.averageOccupancy === 'number'
+          ? item.averageOccupancy
+          : typeof item.avg === 'number'
+          ? item.avg
+          : typeof item.count === 'number'
+          ? item.count
+          : typeof item.value === 'number'
+          ? item.value
+          : typeof item.total === 'number'
+          ? item.total
+          : typeof item.occupants === 'number'
+          ? item.occupants
+          : typeof item.headcount === 'number'
+          ? item.headcount
+          : Number(
+              item.occupancy ??
+                item.avgOccupancy ??
+                item.averageOccupancy ??
+                item.avg ??
+                item.count ??
+                item.value ??
+                0
+            )
+
       return {
         ...item,
         timestamp: ts,
         timeLabel,
-        occupancy: typeof item.occupancy === 'number' ? item.occupancy : Number(item.count ?? 0),
+        occupancy: Number.isNaN(rawCount) ? 0 : rawCount,
       }
     })
   }, [data])
@@ -47,7 +76,7 @@ export function OccupancyTimeChart({ data = [], height = 280 }) {
       <div className="h-[280px] flex items-center justify-center">
         <EmptyState
           title="No occupancy records"
-          description="Waiting for simulation activity or recorded sensor entries."
+          description="No occupancy records found for the selected time range."
         />
       </div>
     )
@@ -59,18 +88,24 @@ export function OccupancyTimeChart({ data = [], height = 280 }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-xs px-1">
-        <div className="flex items-center gap-4 text-muted-foreground">
+        <div className="flex items-center gap-4 text-[#777B80]">
           <span>
-            Latest: <strong className="font-semibold text-foreground font-mono tabular-nums">{latest}</strong> persons
+            Latest: <strong className="font-semibold text-[#202124] font-mono tabular-nums">{latest}</strong> persons
           </span>
           <span>
-            Peak: <strong className="font-semibold text-foreground font-mono tabular-nums">{peak}</strong> persons
+            Peak: <strong className="font-semibold text-[#202124] font-mono tabular-nums">{peak}</strong> persons
           </span>
         </div>
-        <span className="text-[11px] text-muted-foreground font-medium">Solid fill • Zero gradients</span>
+        <span className="text-[11px] text-[#777B80] font-medium">Hourly resolution</span>
       </div>
 
-      <ChartContainer config={chartConfig} className="w-full" style={{ height }}>
+      <ChartContainer
+        config={chartConfig}
+        className="w-full"
+        style={{ height }}
+        role="img"
+        aria-label={`Hourly occupancy timeline chart. Latest ${latest} persons, peak ${peak} persons.`}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={chartData}
@@ -78,22 +113,22 @@ export function OccupancyTimeChart({ data = [], height = 280 }) {
           >
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="var(--border)"
+              stroke="#D9DCDD"
               vertical={false}
-              opacity={0.6}
+              opacity={0.8}
             />
             <XAxis
               dataKey="timeLabel"
-              stroke="var(--muted-foreground)"
+              stroke="#777B80"
               fontSize={11}
               tickLine={false}
-              axisLine={{ stroke: 'var(--border)' }}
+              axisLine={{ stroke: '#D9DCDD' }}
             />
             <YAxis
-              stroke="var(--muted-foreground)"
+              stroke="#777B80"
               fontSize={11}
               tickLine={false}
-              axisLine={{ stroke: 'var(--border)' }}
+              axisLine={{ stroke: '#D9DCDD' }}
               allowDecimals={false}
             />
             <Tooltip
@@ -106,11 +141,11 @@ export function OccupancyTimeChart({ data = [], height = 280 }) {
             <Area
               type="monotone"
               dataKey="occupancy"
-              stroke="var(--chart-occupancy)"
+              stroke="#0B8F8B"
               strokeWidth={2}
-              fill="var(--chart-occupancy)"
+              fill="#0B8F8B"
               fillOpacity={0.12}
-              activeDot={{ r: 4, stroke: 'var(--chart-occupancy)', strokeWidth: 2, fill: 'var(--card)' }}
+              activeDot={{ r: 4, stroke: '#0B8F8B', strokeWidth: 2, fill: '#FFFFFF' }}
               isAnimationActive={false}
             />
           </AreaChart>

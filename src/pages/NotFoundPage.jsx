@@ -9,9 +9,9 @@ export function NotFoundPage() {
 
   return (
     <PageContainer>
-      <Card className="border border-border bg-card shadow-none">
+      <Card className="border border-border bg-card rounded-lg shadow-subtle">
         <CardContent className="p-16 flex flex-col items-center justify-center text-center space-y-4">
-          <div className="h-12 w-12 rounded-md bg-secondary border border-border flex items-center justify-center text-muted-foreground">
+          <div className="h-12 w-12 rounded-lg bg-secondary border border-border flex items-center justify-center text-muted-foreground">
             <FileQuestion className="h-6 w-6" />
           </div>
           <div className="space-y-1">
@@ -20,7 +20,11 @@ export function NotFoundPage() {
               The requested view does not exist in the Crowd Management System.
             </p>
           </div>
-          <Button onClick={() => navigate('/overview')} size="sm">
+          <Button
+            onClick={() => navigate('/overview')}
+            size="sm"
+            className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
+          >
             Return to Overview
           </Button>
         </CardContent>

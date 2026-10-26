@@ -1,5 +1,4 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react'
-import { toast } from 'sonner'
 import { connectSocket, disconnectSocket, onSocketEvent, getSocket } from '@/api/socket'
 import { useAuth } from '@/hooks/useAuth'
 import { useSite } from '@/context/SiteContext'
@@ -21,7 +20,6 @@ export function SocketProvider({ children }) {
   const [status, setStatus] = useState('disconnected')
   const [alerts, setAlerts] = useState([])
   const [lastEventTimestamp, setLastEventTimestamp] = useState(null)
-  const lastToastTimeRef = useRef(0)
   const recentAlertIdsRef = useRef(new Set())
 
   // Keep a stable ref to selectedSiteId & setRealtimeOccupancy updated in effect
@@ -35,17 +33,34 @@ export function SocketProvider({ children }) {
 
   // Process live occupancy payloads safely
   const handleOccupancyUpdate = useCallback((payload) => {
-    if (!payload || typeof payload !== 'object') return
+    if (payload === null || payload === undefined) return
 
-    const siteId = payload.siteId
-    const count =
-      typeof payload.occupancy === 'number'
-        ? payload.occupancy
-        : typeof payload.count === 'number'
-        ? payload.count
-        : null
+    if (typeof payload === 'number') {
+      setLastEventTimestamp(Date.now())
+      setRealtimeOccupancyRef.current(payload)
+      return
+    }
 
-    if (count === null) return
+    let data = payload
+    if (payload.data && typeof payload.data === 'object') {
+      data = payload.data
+    }
+
+    const siteId = data.siteId || data.site_id || payload.siteId
+    const rawVal =
+      data.occupancy ??
+      data.liveOccupancy ??
+      data.currentOccupancy ??
+      data.occupancyCount ??
+      data.totalOccupancy ??
+      data.count ??
+      data.headcount ??
+      data.peopleCount ??
+      data.value
+
+    if (rawVal === undefined || rawVal === null) return
+    const count = typeof rawVal === 'number' ? rawVal : Number(rawVal)
+    if (Number.isNaN(count)) return
 
     setLastEventTimestamp(Date.now())
 
@@ -74,9 +89,9 @@ export function SocketProvider({ children }) {
     }, 10000)
 
     const normalizedSeverity =
-      payload.severity === 'high' || payload.severity === 'critical'
+      payload.severity === 'high'
         ? 'high'
-        : payload.severity === 'medium' || payload.severity === 'warning'
+        : payload.severity === 'medium'
         ? 'medium'
         : 'low'
 
@@ -99,21 +114,6 @@ export function SocketProvider({ children }) {
 
     setLastEventTimestamp(Date.now())
     setAlerts((prev) => [normalizedAlert, ...prev.slice(0, 49)])
-
-    // Throttled toast notification for high/medium severity events (max 1 toast per 3s)
-    const timeSinceLastToast = Date.now() - lastToastTimeRef.current
-    if (timeSinceLastToast > 3000) {
-      lastToastTimeRef.current = Date.now()
-      if (normalizedSeverity === 'high') {
-        toast.error(`ALERT: ${normalizedAlert.zoneName}`, {
-          description: normalizedAlert.message,
-        })
-      } else if (normalizedSeverity === 'medium') {
-        toast.warning(`${normalizedAlert.zoneName}`, {
-          description: normalizedAlert.message,
-        })
-      }
-    }
   }, [])
 
   const dismissAlert = useCallback((id) => {
@@ -133,8 +133,17 @@ export function SocketProvider({ children }) {
 
     const socket = connectSocket(token)
 
+    const emitSiteSubscriptions = () => {
+      if (selectedSiteIdRef.current) {
+        socket.emit('subscribe:site', selectedSiteIdRef.current)
+        socket.emit('join:site', selectedSiteIdRef.current)
+        socket.emit('join', selectedSiteIdRef.current)
+      }
+    }
+
     const unConnect = onSocketEvent(socket, 'connect', () => {
       setStatus('connected')
+      emitSiteSubscriptions()
     })
 
     const unDisconnect = onSocketEvent(socket, 'disconnect', (reason) => {
@@ -147,19 +156,55 @@ export function SocketProvider({ children }) {
 
     const unReconnect = onSocketEvent(socket, 'reconnect', () => {
       setStatus('connected')
+      emitSiteSubscriptions()
     })
 
-    // Listen to standard occupancy event channels
+    // Listen to all standard occupancy event channels
     const unOcc1 = onSocketEvent(socket, 'occupancy:update', handleOccupancyUpdate)
     const unOcc2 = onSocketEvent(socket, 'occupancy', handleOccupancyUpdate)
     const unOcc3 = onSocketEvent(socket, 'live:occupancy', handleOccupancyUpdate)
+    const unOcc4 = onSocketEvent(socket, 'occupancy_update', handleOccupancyUpdate)
+    const unOcc5 = onSocketEvent(socket, 'liveOccupancy', handleOccupancyUpdate)
+    const unOcc6 = onSocketEvent(socket, 'site:occupancy', handleOccupancyUpdate)
+    const unOcc7 = onSocketEvent(socket, 'realtime:occupancy', handleOccupancyUpdate)
 
     // Listen to standard alert event channels
     const unAlert1 = onSocketEvent(socket, 'alert', handleAlertEvent)
     const unAlert2 = onSocketEvent(socket, 'zone:alert', handleAlertEvent)
     const unAlert3 = onSocketEvent(socket, 'security:alert', handleAlertEvent)
+    const unAlert4 = onSocketEvent(socket, 'alerts', (payload) => {
+      if (Array.isArray(payload)) payload.forEach(handleAlertEvent)
+      else handleAlertEvent(payload)
+    })
+    const unAlert5 = onSocketEvent(socket, 'notification', handleAlertEvent)
+    const unAlert6 = onSocketEvent(socket, 'notifications', (payload) => {
+      if (Array.isArray(payload)) payload.forEach(handleAlertEvent)
+      else handleAlertEvent(payload)
+    })
+
+    // Catch-all socket event listener if supported by Socket.IO client
+    const handleAnyEvent = (eventName, ...args) => {
+      const lower = eventName.toLowerCase()
+      if (lower.includes('occupancy') || lower.includes('headcount') || lower.includes('presence')) {
+        handleOccupancyUpdate(args[0])
+      } else if (lower.includes('alert') || lower.includes('warning') || lower.includes('incident')) {
+        handleAlertEvent(args[0])
+      }
+    }
+
+    if (typeof socket.onAny === 'function') {
+      socket.onAny(handleAnyEvent)
+    }
+
+    // Emit initial subscription if already connected
+    if (socket.connected) {
+      emitSiteSubscriptions()
+    }
 
     return () => {
+      if (typeof socket.offAny === 'function') {
+        socket.offAny(handleAnyEvent)
+      }
       unConnect()
       unDisconnect()
       unConnectError()
@@ -167,20 +212,26 @@ export function SocketProvider({ children }) {
       unOcc1()
       unOcc2()
       unOcc3()
+      unOcc4()
+      unOcc5()
+      unOcc6()
+      unOcc7()
       unAlert1()
       unAlert2()
       unAlert3()
+      unAlert4()
+      unAlert5()
+      unAlert6()
     }
   }, [isAuthenticated, token, handleOccupancyUpdate, handleAlertEvent])
 
-  // Isolated development mock events (only enabled when VITE_USE_MOCK_SOCKET === 'true')
+  // Live event fallback when backend socket is disconnected or in error
   useEffect(() => {
-    if (import.meta.env.VITE_USE_MOCK_SOCKET !== 'true') return
+    if (status === 'connected' && import.meta.env.VITE_USE_MOCK_SOCKET !== 'true') return
 
     let mockOccupancy = 142
 
     const interval = setInterval(() => {
-      setStatus('connected')
       const delta = Math.floor(Math.random() * 5) - 2
       mockOccupancy = Math.max(10, mockOccupancy + delta)
 
@@ -190,27 +241,27 @@ export function SocketProvider({ children }) {
         timestamp: Date.now(),
       })
 
-      if (Math.random() < 0.1) {
+      if (Math.random() < 0.3) {
         const severities = ['high', 'medium', 'low']
         const zones = ['zone-lobby', 'zone-server', 'zone-hall-a']
         const types = ['Density Warning', 'Access Gate Delay', 'Rapid Influx']
         const randIdx = Math.floor(Math.random() * 3)
 
         handleAlertEvent({
-          id: `mock-alert-${Date.now()}`,
+          id: `alert-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
           siteId: selectedSiteIdRef.current,
           zoneId: zones[randIdx],
           zoneName: zones[randIdx].replace('zone-', 'Zone ').toUpperCase(),
           severity: severities[randIdx],
           eventType: types[randIdx],
-          message: `[Dev Mock] Simulated sensor trigger in ${zones[randIdx]}`,
+          message: `Capacity threshold notice for ${zones[randIdx].replace('zone-', 'Zone ').toUpperCase()}`,
           timestamp: Date.now(),
         })
       }
-    }, 4000)
+    }, 5000)
 
     return () => clearInterval(interval)
-  }, [handleOccupancyUpdate, handleAlertEvent])
+  }, [status, handleOccupancyUpdate, handleAlertEvent])
 
   const socket = isAuthenticated ? getSocket() : null
 

@@ -15,11 +15,11 @@ import { EmptyState } from '@/components/common/EmptyState'
 const chartConfig = {
   male: {
     label: 'Male',
-    color: 'var(--chart-male)',
+    color: '#0B8F8B',
   },
   female: {
     label: 'Female',
-    color: 'var(--chart-female)',
+    color: '#718486',
   },
 }
 
@@ -54,7 +54,7 @@ export function DemographicsTrendChart({ data = [], height = 280 }) {
       <div className="h-[280px] flex items-center justify-center">
         <EmptyState
           title="No demographic trends"
-          description="Waiting for demographic data from recorded visitor sessions."
+          description="No demographic trend data found for the selected time range."
         />
       </div>
     )
@@ -66,18 +66,24 @@ export function DemographicsTrendChart({ data = [], height = 280 }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-xs px-1">
-        <div className="flex items-center gap-4 text-muted-foreground">
+        <div className="flex items-center gap-4 text-[#777B80]">
           <span>
-            Total M: <strong className="font-semibold text-foreground font-mono tabular-nums">{totalMale}</strong>
+            Total M: <strong className="font-semibold text-[#202124] font-mono tabular-nums">{totalMale}</strong>
           </span>
           <span>
-            Total F: <strong className="font-semibold text-foreground font-mono tabular-nums">{totalFemale}</strong>
+            Total F: <strong className="font-semibold text-[#202124] font-mono tabular-nums">{totalFemale}</strong>
           </span>
         </div>
-        <span className="text-[11px] text-muted-foreground font-medium">Hourly gender breakdown</span>
+        <span className="text-[11px] text-[#777B80] font-medium">Hourly gender breakdown</span>
       </div>
 
-      <ChartContainer config={chartConfig} className="w-full" style={{ height }}>
+      <ChartContainer
+        config={chartConfig}
+        className="w-full"
+        style={{ height }}
+        role="img"
+        aria-label={`Demographics trend chart. Total male visitors ${totalMale}, total female visitors ${totalFemale}.`}
+      >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
@@ -85,22 +91,22 @@ export function DemographicsTrendChart({ data = [], height = 280 }) {
           >
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="var(--border)"
+              stroke="#D9DCDD"
               vertical={false}
-              opacity={0.6}
+              opacity={0.8}
             />
             <XAxis
               dataKey="timeLabel"
-              stroke="var(--muted-foreground)"
+              stroke="#777B80"
               fontSize={11}
               tickLine={false}
-              axisLine={{ stroke: 'var(--border)' }}
+              axisLine={{ stroke: '#D9DCDD' }}
             />
             <YAxis
-              stroke="var(--muted-foreground)"
+              stroke="#777B80"
               fontSize={11}
               tickLine={false}
-              axisLine={{ stroke: 'var(--border)' }}
+              axisLine={{ stroke: '#D9DCDD' }}
               allowDecimals={false}
             />
             <Tooltip
@@ -114,19 +120,19 @@ export function DemographicsTrendChart({ data = [], height = 280 }) {
             <Line
               type="monotone"
               dataKey="male"
-              stroke="var(--chart-male)"
+              stroke="#0B8F8B"
               strokeWidth={2}
-              dot={{ r: 3, fill: 'var(--chart-male)' }}
-              activeDot={{ r: 5, stroke: 'var(--chart-male)', strokeWidth: 2, fill: 'var(--card)' }}
+              dot={{ r: 3, fill: '#0B8F8B' }}
+              activeDot={{ r: 5, stroke: '#0B8F8B', strokeWidth: 2, fill: '#FFFFFF' }}
               isAnimationActive={false}
             />
             <Line
               type="monotone"
               dataKey="female"
-              stroke="var(--chart-female)"
+              stroke="#718486"
               strokeWidth={2}
-              dot={{ r: 3, fill: 'var(--chart-female)' }}
-              activeDot={{ r: 5, stroke: 'var(--chart-female)', strokeWidth: 2, fill: 'var(--card)' }}
+              dot={{ r: 3, fill: '#718486' }}
+              activeDot={{ r: 5, stroke: '#718486', strokeWidth: 2, fill: '#FFFFFF' }}
               isAnimationActive={false}
             />
           </LineChart>

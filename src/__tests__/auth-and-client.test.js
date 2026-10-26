@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { parseJwt, isTokenExpired, extractUserFromToken } from '@/lib/jwt'
-import { extractToken } from '@/api/auth'
+import { extractToken, login } from '@/api/auth'
 import {
   getStoredToken,
   setStoredToken,
@@ -57,6 +57,11 @@ describe('JWT Utilities', () => {
 })
 
 describe('Auth Service & Token Extraction', () => {
+  beforeEach(() => {
+    clearStoredToken()
+    vi.restoreAllMocks()
+  })
+
   it('extracts tokens from multiple backend response shapes', () => {
     expect(extractToken('raw-jwt-string')).toBe('raw-jwt-string')
     expect(extractToken({ token: 'tok-1' })).toBe('tok-1')
@@ -71,6 +76,36 @@ describe('Auth Service & Token Extraction', () => {
     expect(getStoredToken()).toBe('test-bearer-token')
 
     clearStoredToken()
+    expect(getStoredToken()).toBeNull()
+  })
+
+  it('rejects when server returns { errorMessage: "Invalid credentials" } without token', async () => {
+    vi.spyOn(apiClient, 'post').mockResolvedValueOnce({
+      errorMessage: 'Invalid credentials',
+    })
+
+    await expect(
+      login({ email: 'wrong@example.com', password: 'badpassword' })
+    ).rejects.toThrow('Invalid credentials')
+
+    expect(getStoredToken()).toBeNull()
+  })
+
+  it('rejects and does not forge fallback token when server returns 401', async () => {
+    vi.spyOn(apiClient, 'post').mockRejectedValueOnce({
+      status: 401,
+      isAuthError: true,
+      message: 'Invalid credentials',
+    })
+
+    await expect(
+      login({ email: 'wrong@example.com', password: 'badpassword' })
+    ).rejects.toMatchObject({
+      status: 401,
+      isAuthError: true,
+      message: 'Invalid credentials',
+    })
+
     expect(getStoredToken()).toBeNull()
   })
 })
@@ -125,6 +160,76 @@ describe('Axios Client Interceptors & Normalization', () => {
     } catch (normalizedError) {
       expect(normalizedError.isNetworkError).toBe(true)
       expect(normalizedError.message).toContain('unexpected network error')
+    }
+  })
+
+  it('dispatches eviction when response contains "Missing Authorization header"', async () => {
+    const mockListener = vi.fn()
+    const unsubscribe = subscribeUnauthorized(mockListener)
+    setStoredToken('active-token')
+
+    const responseInterceptorError = apiClient.interceptors.response.handlers[0].rejected
+
+    try {
+      await responseInterceptorError({
+        config: { url: '/api/sites' },
+        response: {
+          status: 401,
+          data: { message: 'Missing Authorization header' },
+        },
+      })
+    } catch (err) {
+      expect(err.isAuthError).toBe(true)
+      expect(getStoredToken()).toBeNull()
+      expect(mockListener).toHaveBeenCalledTimes(1)
+    } finally {
+      unsubscribe()
+    }
+  })
+
+  it('dispatches eviction when response contains "Invalid or expired token"', async () => {
+    const mockListener = vi.fn()
+    const unsubscribe = subscribeUnauthorized(mockListener)
+    setStoredToken('active-token')
+
+    const responseInterceptorError = apiClient.interceptors.response.handlers[0].rejected
+
+    try {
+      await responseInterceptorError({
+        config: { url: '/api/analytics/occupancy' },
+        response: {
+          status: 401,
+          data: { message: 'Invalid or expired token' },
+        },
+      })
+    } catch (err) {
+      expect(err.isAuthError).toBe(true)
+      expect(getStoredToken()).toBeNull()
+      expect(mockListener).toHaveBeenCalledTimes(1)
+    } finally {
+      unsubscribe()
+    }
+  })
+
+  it('dispatches eviction even if server returns 200 OK with "Invalid or expired token" payload', async () => {
+    const mockListener = vi.fn()
+    const unsubscribe = subscribeUnauthorized(mockListener)
+    setStoredToken('active-token')
+
+    const responseInterceptorSuccess = apiClient.interceptors.response.handlers[0].fulfilled
+
+    try {
+      await responseInterceptorSuccess({
+        status: 200,
+        config: { url: '/api/sites' },
+        data: { message: 'Invalid or expired token' },
+      })
+    } catch (err) {
+      expect(err.isAuthError).toBe(true)
+      expect(getStoredToken()).toBeNull()
+      expect(mockListener).toHaveBeenCalledTimes(1)
+    } finally {
+      unsubscribe()
     }
   })
 })

@@ -12,11 +12,11 @@ import { EmptyState } from '@/components/common/EmptyState'
 const chartConfig = {
   male: {
     label: 'Male',
-    color: 'var(--chart-male)',
+    color: '#0B8F8B',
   },
   female: {
     label: 'Female',
-    color: 'var(--chart-female)',
+    color: '#718486',
   },
 }
 
@@ -41,8 +41,8 @@ export function DemographicsBreakdownChart({ data = [], height = 280 }) {
 
     const list = sum > 0
       ? [
-          { name: 'Male', value: male, color: 'var(--chart-male)', pct: mPct },
-          { name: 'Female', value: female, color: 'var(--chart-female)', pct: fPct },
+          { name: 'Male', value: male, color: '#0B8F8B', pct: mPct },
+          { name: 'Female', value: female, color: '#718486', pct: fPct },
         ]
       : []
 
@@ -61,7 +61,7 @@ export function DemographicsBreakdownChart({ data = [], height = 280 }) {
       <div className="h-[280px] flex items-center justify-center">
         <EmptyState
           title="No demographic breakdown"
-          description="Waiting for classified visitor sessions."
+          description="No demographic breakdown data for the selected time range."
         />
       </div>
     )
@@ -70,7 +70,12 @@ export function DemographicsBreakdownChart({ data = [], height = 280 }) {
   return (
     <div className="space-y-4">
       <div className="relative flex items-center justify-center" style={{ height: height - 50 }}>
-        <ChartContainer config={chartConfig} className="w-full h-full">
+        <ChartContainer
+          config={chartConfig}
+          className="w-full h-full"
+          role="img"
+          aria-label={`Demographics gender breakdown donut. ${malePct}% male (${maleCount.toLocaleString()}), ${femalePct}% female (${femaleCount.toLocaleString()}).`}
+        >
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Tooltip
@@ -88,9 +93,9 @@ export function DemographicsBreakdownChart({ data = [], height = 280 }) {
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                innerRadius={50}
-                outerRadius={75}
-                paddingAngle={2}
+                innerRadius={52}
+                outerRadius={76}
+                paddingAngle={3}
                 stroke="var(--card)"
                 strokeWidth={2}
                 isAnimationActive={false}
@@ -115,10 +120,10 @@ export function DemographicsBreakdownChart({ data = [], height = 280 }) {
       </div>
 
       {/* Breakdown Legend details */}
-      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/60 text-xs">
-        <div className="p-2 rounded bg-secondary/40 border border-border flex items-center justify-between">
+      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border text-xs">
+        <div className="p-2.5 rounded-lg bg-secondary/40 border border-border flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--chart-male)' }} />
+            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: '#0B8F8B' }} />
             <span className="text-muted-foreground">Male</span>
           </div>
           <div className="text-right">
@@ -127,9 +132,9 @@ export function DemographicsBreakdownChart({ data = [], height = 280 }) {
           </div>
         </div>
 
-        <div className="p-2 rounded bg-secondary/40 border border-border flex items-center justify-between">
+        <div className="p-2.5 rounded-lg bg-secondary/40 border border-border flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--chart-female)' }} />
+            <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: '#718486' }} />
             <span className="text-muted-foreground">Female</span>
           </div>
           <div className="text-right">
