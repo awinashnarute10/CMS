@@ -25,8 +25,12 @@ export function SocketProvider({ children }) {
   // Keep a stable ref to selectedSiteId & setRealtimeOccupancy updated in effect
   const selectedSiteIdRef = useRef(selectedSiteId)
   const setRealtimeOccupancyRef = useRef(setRealtimeOccupancy)
+  const zoneOccupanciesRef = useRef(new Map())
 
   useEffect(() => {
+    if (selectedSiteIdRef.current !== selectedSiteId) {
+      zoneOccupanciesRef.current.clear()
+    }
     selectedSiteIdRef.current = selectedSiteId
     setRealtimeOccupancyRef.current = setRealtimeOccupancy
   }, [selectedSiteId, setRealtimeOccupancy])
@@ -41,9 +45,31 @@ export function SocketProvider({ children }) {
       return
     }
 
+    // Array of zones or records: sum up counts
+    if (Array.isArray(payload)) {
+      const sum = payload.reduce((acc, item) => {
+        const val = item?.occupancy ?? item?.count ?? item?.currentOccupancy ?? item?.value ?? 0
+        return acc + Number(val || 0)
+      }, 0)
+      setLastEventTimestamp(Date.now())
+      setRealtimeOccupancyRef.current(sum)
+      return
+    }
+
     let data = payload
     if (payload.data && typeof payload.data === 'object') {
       data = payload.data
+    }
+
+    // Object containing zones array
+    if (Array.isArray(data.zones)) {
+      const sum = data.zones.reduce((acc, item) => {
+        const val = item?.occupancy ?? item?.count ?? item?.currentOccupancy ?? item?.value ?? 0
+        return acc + Number(val || 0)
+      }, 0)
+      setLastEventTimestamp(Date.now())
+      setRealtimeOccupancyRef.current(sum)
+      return
     }
 
     const siteId = data.siteId || data.site_id || payload.siteId
@@ -56,6 +82,8 @@ export function SocketProvider({ children }) {
       data.count ??
       data.headcount ??
       data.peopleCount ??
+      data.total ??
+      data.current ??
       data.value
 
     if (rawVal === undefined || rawVal === null) return
@@ -65,8 +93,22 @@ export function SocketProvider({ children }) {
     setLastEventTimestamp(Date.now())
 
     // Update active site occupancy if payload matches currently selected site or no siteId specified
-    if (!siteId || siteId === selectedSiteIdRef.current) {
-      setRealtimeOccupancyRef.current(count)
+    const matchesSite =
+      !siteId ||
+      !selectedSiteIdRef.current ||
+      String(siteId).toLowerCase() === String(selectedSiteIdRef.current).toLowerCase()
+
+    if (matchesSite) {
+      const zoneId = data.zoneId || data.zone || data.zone_id || data.floor
+      if (zoneId) {
+        zoneOccupanciesRef.current.set(String(zoneId), count)
+        const siteTotal = Array.from(zoneOccupanciesRef.current.values()).reduce((a, b) => a + b, 0)
+        console.log('[Socket IO] Zone occupancy update for', zoneId, '->', count, 'Total site sum:', siteTotal)
+        setRealtimeOccupancyRef.current(siteTotal)
+      } else {
+        console.log('[Socket IO] Occupancy updated to:', count, 'payload:', payload)
+        setRealtimeOccupancyRef.current(count)
+      }
     }
   }, [])
 
@@ -77,7 +119,7 @@ export function SocketProvider({ children }) {
     const alertId =
       payload.id ||
       payload.eventId ||
-      `${payload.siteId || 'site'}-${payload.zoneId || 'zone'}-${payload.timestamp || Date.now()}`
+      `${payload.siteId || payload.site || 'site'}-${payload.zoneId || payload.zone || 'zone'}-${payload.timestamp || Date.now()}`
 
     // Deduplicate rapid repeat events
     if (recentAlertIdsRef.current.has(alertId)) {
@@ -102,16 +144,20 @@ export function SocketProvider({ children }) {
 
     const normalizedAlert = {
       id: alertId,
-      siteId: payload.siteId || selectedSiteIdRef.current || 'site-001',
-      zoneId: payload.zoneId || 'zone-main',
-      zoneName: payload.zoneName || payload.zoneId || 'Monitored Area',
+      siteId: payload.siteId || payload.site || selectedSiteIdRef.current || 'SITE-AE-DXB-001',
+      zoneId: payload.zoneId || payload.zone || 'zone-main',
+      zoneName: payload.zoneName || payload.zone || 'Monitored Area',
       severity: normalizedSeverity,
-      eventType: payload.eventType || payload.type || 'Security Alert',
-      message: payload.message || payload.description || 'Threshold exceeded in monitored zone',
+      eventType: payload.eventType || payload.action || payload.type || 'Movement Alert',
+      message:
+        payload.message ||
+        payload.description ||
+        (payload.action ? `${String(payload.action).toUpperCase()} recorded in ${payload.zoneName || payload.zone || 'monitored zone'}` : 'Zone movement event'),
       timestamp: timeFormatted,
       rawTimestamp: payload.timestamp || Date.now(),
     }
 
+    console.log('[Socket IO] Alert received:', normalizedAlert)
     setLastEventTimestamp(Date.now())
     setAlerts((prev) => [normalizedAlert, ...prev.slice(0, 49)])
   }, [])
@@ -184,10 +230,17 @@ export function SocketProvider({ children }) {
 
     // Catch-all socket event listener if supported by Socket.IO client
     const handleAnyEvent = (eventName, ...args) => {
+      console.log('[Socket Inbound Event]', eventName, args[0])
       const lower = eventName.toLowerCase()
       if (lower.includes('occupancy') || lower.includes('headcount') || lower.includes('presence')) {
         handleOccupancyUpdate(args[0])
-      } else if (lower.includes('alert') || lower.includes('warning') || lower.includes('incident')) {
+      } else if (
+        lower.includes('alert') ||
+        lower.includes('warning') ||
+        lower.includes('incident') ||
+        lower.includes('entry') ||
+        lower.includes('exit')
+      ) {
         handleAlertEvent(args[0])
       }
     }
@@ -225,43 +278,16 @@ export function SocketProvider({ children }) {
     }
   }, [isAuthenticated, token, handleOccupancyUpdate, handleAlertEvent])
 
-  // Live event fallback when backend socket is disconnected or in error
+  // Re-subscribe dynamically whenever active site changes and socket is connected
   useEffect(() => {
-    if (status === 'connected' && import.meta.env.VITE_USE_MOCK_SOCKET !== 'true') return
-
-    let mockOccupancy = 142
-
-    const interval = setInterval(() => {
-      const delta = Math.floor(Math.random() * 5) - 2
-      mockOccupancy = Math.max(10, mockOccupancy + delta)
-
-      handleOccupancyUpdate({
-        siteId: selectedSiteIdRef.current,
-        occupancy: mockOccupancy,
-        timestamp: Date.now(),
-      })
-
-      if (Math.random() < 0.3) {
-        const severities = ['high', 'medium', 'low']
-        const zones = ['zone-lobby', 'zone-server', 'zone-hall-a']
-        const types = ['Density Warning', 'Access Gate Delay', 'Rapid Influx']
-        const randIdx = Math.floor(Math.random() * 3)
-
-        handleAlertEvent({
-          id: `alert-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-          siteId: selectedSiteIdRef.current,
-          zoneId: zones[randIdx],
-          zoneName: zones[randIdx].replace('zone-', 'Zone ').toUpperCase(),
-          severity: severities[randIdx],
-          eventType: types[randIdx],
-          message: `Capacity threshold notice for ${zones[randIdx].replace('zone-', 'Zone ').toUpperCase()}`,
-          timestamp: Date.now(),
-        })
-      }
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [status, handleOccupancyUpdate, handleAlertEvent])
+    if (!selectedSiteId) return
+    const socket = getSocket()
+    if (socket && socket.connected) {
+      socket.emit('subscribe:site', selectedSiteId)
+      socket.emit('join:site', selectedSiteId)
+      socket.emit('join', selectedSiteId)
+    }
+  }, [selectedSiteId])
 
   const socket = isAuthenticated ? getSocket() : null
 

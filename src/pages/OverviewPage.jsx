@@ -6,7 +6,6 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { KpiCard } from '@/components/common/KpiCard'
 import { TimeRangeSelector, computeRangeFromPreset } from '@/components/common/TimeRangeSelector'
 import { ChartCard } from '@/components/common/ChartCard'
-import { StatusBadge } from '@/components/common/StatusBadge'
 import { OccupancyTimeChart } from '@/components/charts/OccupancyTimeChart'
 import { DemographicsTrendChart } from '@/components/charts/DemographicsTrendChart'
 import { DemographicsBreakdownChart } from '@/components/charts/DemographicsBreakdownChart'
@@ -14,6 +13,7 @@ import { useSite } from '@/context/SiteContext'
 import {
   useOccupancyQuery,
   useTodaysFootfallQuery,
+  useYesterdayFootfallQuery,
   useDwellQuery,
   useDemographicsQuery,
 } from '@/hooks/useAnalytics'
@@ -100,6 +100,26 @@ export function OverviewPage() {
     enabled: Boolean(selectedSiteId),
   })
 
+  const yesterdayFootfallQuery = useYesterdayFootfallQuery({
+    siteId: selectedSiteId,
+    enabled: Boolean(selectedSiteId),
+  })
+
+  const footfallComparison = useMemo(() => {
+    const today = footfallQuery.data?.footfall
+    const yesterday = yesterdayFootfallQuery.data?.footfall
+    if (typeof today === 'number' && typeof yesterday === 'number' && yesterday > 0) {
+      const diff = today - yesterday
+      const pct = Math.round((diff / yesterday) * 100)
+      const sign = pct >= 0 ? '+' : ''
+      return {
+        delta: `${sign}${pct}% vs yesterday`,
+        trend: pct >= 0 ? 'up' : 'down',
+      }
+    }
+    return null
+  }, [footfallQuery.data?.footfall, yesterdayFootfallQuery.data?.footfall])
+
   const dwellQuery = useDwellQuery({
     siteId: selectedSiteId,
     fromUtc,
@@ -177,8 +197,8 @@ export function OverviewPage() {
           value={liveOccupancy != null ? liveOccupancy.toLocaleString() : null}
           unit="persons"
           icon={Users}
-          isLoading={occupancyQuery.isLoading || isLoadingSite}
-          isError={occupancyQuery.isError}
+          isLoading={liveOccupancy == null && isLoadingSite}
+          isError={isLiveStreamActive ? false : (liveOccupancy == null && occupancyQuery.isError)}
           errorMessage={occupancyQuery.error?.message}
           onRetry={() => occupancyQuery.refetch()}
           subtitle={
@@ -196,6 +216,7 @@ export function OverviewPage() {
           value={footfallQuery.data?.footfall != null ? footfallQuery.data.footfall.toLocaleString() : null}
           unit="entries"
           icon={Footprints}
+          comparison={footfallComparison}
           isLoading={footfallQuery.isLoading || isLoadingSite}
           isError={footfallQuery.isError}
           errorMessage={footfallQuery.error?.message}
@@ -264,53 +285,6 @@ export function OverviewPage() {
           <DemographicsBreakdownChart data={demographicsSeries} />
         </ChartCard>
       </div>
-
-      {/* Monitored Zones Breakdown Table */}
-      {selectedSite?.zones && selectedSite.zones.length > 0 && (
-        <div className="rounded-lg border border-border bg-card p-5 space-y-3.5 shadow-subtle">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Configured Zones ({selectedSite.zones.length})
-            </h3>
-            <span className="text-xs text-muted-foreground font-mono">
-              Site ID: {selectedSite.siteId}
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {selectedSite.zones.map((zone) => (
-              <div
-                key={zone.zoneId}
-                className="p-3.5 rounded-lg bg-secondary/50 border border-border flex flex-col justify-between gap-2.5 hover:border-primary/40 transition-colors"
-              >
-                <div>
-                  <p className="text-xs font-semibold text-foreground">{zone.name}</p>
-                  <p className="text-[11px] text-muted-foreground font-mono mt-0.5">{zone.zoneId}</p>
-                </div>
-                <div className="flex items-center justify-between pt-2 border-t border-border text-[11px]">
-                  <span className="text-muted-foreground">Security</span>
-                  <StatusBadge
-                    status={
-                      zone.securityLevel === 'high'
-                        ? 'high'
-                        : zone.securityLevel === 'medium'
-                        ? 'medium'
-                        : 'low'
-                    }
-                    label={
-                      zone.securityLevel === 'high'
-                        ? 'HIGH'
-                        : zone.securityLevel === 'medium'
-                        ? 'MEDIUM'
-                        : 'LOW'
-                    }
-                    showDot={false}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </PageContainer>
   )
 }

@@ -52,6 +52,28 @@ export function useTodaysFootfallQuery({ siteId, enabled = true } = {}) {
 }
 
 /**
+ * Hook for yesterday's footfall query (calculates yesterday's UTC window for comparison)
+ */
+export function useYesterdayFootfallQuery({ siteId, enabled = true } = {}) {
+  const isEnabled = Boolean(siteId && enabled)
+
+  return useQuery({
+    queryKey: analyticsKeys.footfall({ siteId, period: 'yesterday' }),
+    queryFn: ({ signal }) => {
+      const now = new Date()
+      const startOfYesterdayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1, 0, 0, 0, 0)
+      const endOfYesterdayUtc = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0) - 1
+      return getFootfall(
+        { siteId, fromUtc: startOfYesterdayUtc, toUtc: endOfYesterdayUtc },
+        { signal }
+      )
+    },
+    enabled: isEnabled,
+    staleTime: 1000 * 60 * 5, // 5 min
+  })
+}
+
+/**
  * Hook for average dwell duration query
  */
 export function useDwellQuery({ siteId, fromUtc, toUtc, enabled = true } = {}) {
@@ -62,6 +84,7 @@ export function useDwellQuery({ siteId, fromUtc, toUtc, enabled = true } = {}) {
     queryFn: ({ signal }) => getDwell({ siteId, fromUtc, toUtc }, { signal }),
     enabled: isEnabled,
     staleTime: 1000 * 30,
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -78,6 +101,7 @@ export function useOccupancyQuery({ siteId, fromUtc, toUtc, enabled = true } = {
     queryFn: ({ signal }) => getOccupancyTimeSeries({ siteId, fromUtc, toUtc }, { signal }),
     enabled: isEnabled,
     staleTime: 1000 * 30,
+    placeholderData: keepPreviousData,
   })
 }
 
@@ -92,6 +116,7 @@ export function useDemographicsQuery({ siteId, fromUtc, toUtc, enabled = true } 
     queryFn: ({ signal }) => getDemographics({ siteId, fromUtc, toUtc }, { signal }),
     enabled: isEnabled,
     staleTime: 1000 * 30,
+    placeholderData: keepPreviousData,
   })
 }
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { shouldRetryQuery } from '@/lib/queryClient'
 import { computeRangeFromPreset, TIME_PRESETS } from '@/components/common/TimeRangeSelector'
+import { resolveLiveTimeRange } from '@/api/analytics'
 import { analyticsKeys } from '@/hooks/useAnalytics'
 import { formatDwellDuration } from '@/lib/utils'
 
@@ -51,6 +52,29 @@ describe('Time Range & Preset Calculations', () => {
   it('falls back gracefully to 24h when unknown preset is passed', () => {
     const { presetId } = computeRangeFromPreset('unknown-period')
     expect(presetId).toBe('24h')
+  })
+
+  it('ensures toUtc is always the current time when the API is fired', () => {
+    const before = Date.now()
+    // Stale range from 30 minutes ago
+    const staleToUtc = before - 1000 * 60 * 30
+    const staleFromUtc = staleToUtc - 1000 * 60 * 60 * 6 // 6h window
+    const resolved = resolveLiveTimeRange(staleFromUtc, staleToUtc)
+    const after = Date.now()
+
+    expect(resolved.toUtc).toBeGreaterThanOrEqual(before)
+    expect(resolved.toUtc).toBeLessThanOrEqual(after)
+    expect(resolved.toUtc - resolved.fromUtc).toBe(1000 * 60 * 60 * 6)
+  })
+
+  it('preserves immutable historical comparison windows (e.g. yesterday)', () => {
+    const now = Date.now()
+    const yesterdayFrom = now - 1000 * 60 * 60 * 48
+    const yesterdayTo = now - 1000 * 60 * 60 * 24
+    const resolved = resolveLiveTimeRange(yesterdayFrom, yesterdayTo)
+
+    expect(resolved.toUtc).toBe(yesterdayTo)
+    expect(resolved.fromUtc).toBe(yesterdayFrom)
   })
 })
 

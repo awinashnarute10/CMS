@@ -4,9 +4,6 @@ import {
   Search,
   Filter,
   RefreshCw,
-  Clock,
-  UserCheck,
-  Footprints,
 } from 'lucide-react'
 
 import { PageContainer } from '@/components/layout/PageContainer'
@@ -26,7 +23,7 @@ import {
 import { useSite } from '@/context/SiteContext'
 import { useEntryExitQuery, analyticsKeys } from '@/hooks/useAnalytics'
 import { getEntryExitRecords } from '@/api/analytics'
-import { formatDwellDuration } from '@/lib/utils'
+import { formatDwellDuration, cn } from '@/lib/utils'
 
 function formatTimestamp(utcMs, localFallback) {
   if (typeof utcMs === 'number' && !isNaN(utcMs)) {
@@ -49,6 +46,7 @@ export function CrowdEntriesPage() {
   const [pageSize, setPageSize] = useState(50)
   const [searchQuery, setSearchQuery] = useState('')
   const [zoneFilter, setZoneFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'inside' | 'exited'
 
   const { fromUtc, toUtc } = useMemo(
     () => computeRangeFromPreset(timePreset),
@@ -85,6 +83,15 @@ export function CrowdEntriesPage() {
   const totalRecords = pageData?.totalRecords ?? 0
   const totalPages = pageData?.totalPages || (totalRecords > 0 ? Math.ceil(totalRecords / pageSize) : 1)
 
+  // Derive counts of visitors currently inside vs completed visits
+  const insideCount = useMemo(() => {
+    return (pageData?.records || []).filter((r) => r.exitUtc == null).length
+  }, [pageData?.records])
+
+  const exitedCount = useMemo(() => {
+    return (pageData?.records || []).filter((r) => r.exitUtc != null).length
+  }, [pageData?.records])
+
   const queryClient = useQueryClient()
 
   // Eliminate pagination request waterfall: prefetch adjacent page into TanStack Query cache
@@ -108,11 +115,17 @@ export function CrowdEntriesPage() {
     }
   }, [pageNumber, totalPages, selectedSiteId, fromUtc, toUtc, pageSize, queryClient])
 
-  // Filter in-memory for name/ID search and zone dropdown
+  // Filter in-memory for name/ID search, zone dropdown, and visit status (still inside vs exited)
   const filteredRecords = useMemo(() => {
     const records = pageData?.records || []
     return records.filter((rec) => {
       if (zoneFilter !== 'all' && rec.zoneId !== zoneFilter) {
+        return false
+      }
+      if (statusFilter === 'inside' && rec.exitUtc != null) {
+        return false
+      }
+      if (statusFilter === 'exited' && rec.exitUtc == null) {
         return false
       }
       if (searchQuery.trim()) {
@@ -123,7 +136,7 @@ export function CrowdEntriesPage() {
       }
       return true
     })
-  }, [pageData?.records, zoneFilter, searchQuery])
+  }, [pageData?.records, zoneFilter, statusFilter, searchQuery])
 
   // Table columns definition with small circular user avatar, readable dark values, aligned columns
   const columns = useMemo(
@@ -160,9 +173,24 @@ export function CrowdEntriesPage() {
         },
       },
       {
+        key: 'status',
+        header: 'Visit Status',
+        className: 'w-[130px]',
+        render: (_, row) => {
+          const isInside = row.exitUtc == null
+          return (
+            <StatusBadge
+              status={isInside ? 'success' : 'neutral'}
+              label={isInside ? 'Still Inside' : 'Completed'}
+              showDot={isInside}
+            />
+          )
+        },
+      },
+      {
         key: 'gender',
         header: 'Gender',
-        className: 'w-[100px]',
+        className: 'w-[90px]',
         render: (val) => {
           if (!val) return <span className="text-muted-foreground">—</span>
           const normalized = String(val).toLowerCase()
@@ -176,7 +204,7 @@ export function CrowdEntriesPage() {
       {
         key: 'zoneName',
         header: 'Zone Location',
-        className: 'min-w-[160px]',
+        className: 'min-w-[150px]',
         render: (val, row) => (
           <div>
             <span className="text-foreground font-medium block">{val || '—'}</span>
@@ -191,7 +219,7 @@ export function CrowdEntriesPage() {
       {
         key: 'entryLocal',
         header: 'Entry Time',
-        className: 'min-w-[140px]',
+        className: 'min-w-[130px]',
         render: (_, row) => {
           const formatted = formatTimestamp(row.entryUtc, row.entryLocal)
           if (!formatted) return <span className="text-muted-foreground">—</span>
@@ -212,8 +240,16 @@ export function CrowdEntriesPage() {
       {
         key: 'exitLocal',
         header: 'Exit Time',
-        className: 'min-w-[140px]',
+        className: 'min-w-[130px]',
         render: (_, row) => {
+          if (row.exitUtc == null) {
+            return (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--status-success)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--status-success)] animate-pulse" />
+                Active inside
+              </span>
+            )
+          }
           const formatted = formatTimestamp(row.exitUtc, row.exitLocal)
           if (!formatted) {
             return <span className="text-muted-foreground font-mono">—</span>
@@ -236,7 +272,7 @@ export function CrowdEntriesPage() {
         key: 'dwellMinutes',
         header: 'Dwell Time',
         align: 'right',
-        className: 'w-[140px]',
+        className: 'w-[130px]',
         render: (val) => {
           const formatted = formatDwellDuration(val)
           if (formatted) {
@@ -253,7 +289,7 @@ export function CrowdEntriesPage() {
         key: 'severity',
         header: 'Security Level',
         align: 'center',
-        className: 'w-[120px]',
+        className: 'w-[110px]',
         render: (val) => {
           const sev = val === 'high' ? 'high' : val === 'medium' ? 'medium' : 'low'
           return (
@@ -304,67 +340,65 @@ export function CrowdEntriesPage() {
         }
       />
 
-      {/* Summary KPI Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between shadow-subtle">
-          <div>
-            <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold block">
-              Total Entries
-            </span>
-            <span className="text-2xl font-semibold text-foreground font-mono tabular-nums mt-1 block">
-              {totalRecords.toLocaleString()}
-            </span>
-          </div>
-          <div className="h-9 w-9 rounded-lg bg-secondary border border-border flex items-center justify-center text-muted-foreground">
-            <Footprints className="h-4 w-4" />
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between shadow-subtle">
-          <div>
-            <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold block">
-              Page
-            </span>
-            <span className="text-2xl font-semibold text-foreground font-mono tabular-nums mt-1 block">
-              {pageNumber} <span className="text-xs text-muted-foreground font-normal">/ {totalPages}</span>
-            </span>
-          </div>
-          <div className="h-9 w-9 rounded-lg bg-secondary border border-border flex items-center justify-center text-muted-foreground">
-            <Clock className="h-4 w-4" />
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-border bg-card p-4 flex items-center justify-between shadow-subtle">
-          <div>
-            <span className="text-xs uppercase tracking-wider text-muted-foreground font-semibold block">
-              Records Shown
-            </span>
-            <span className="text-2xl font-semibold text-foreground font-mono tabular-nums mt-1 block">
-              {filteredRecords.length}
-            </span>
-          </div>
-          <div className="h-9 w-9 rounded-lg bg-secondary border border-border flex items-center justify-center text-muted-foreground">
-            <UserCheck className="h-4 w-4" />
-          </div>
-        </div>
-      </div>
-
       {/* Filters Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-lg border border-border bg-card shadow-subtle">
-        {/* Search */}
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search visitor name or ID..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8 h-9 text-xs bg-card border-border text-foreground placeholder:text-muted-foreground rounded-lg focus:border-primary focus:ring-1 focus:ring-primary"
-          />
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 p-3.5 rounded-lg border border-border bg-card shadow-subtle">
+        {/* Left: Search & Status Segmented Buttons */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-1">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search visitor name or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 h-9 text-xs bg-card border-border text-foreground placeholder:text-muted-foreground rounded-lg focus:border-primary focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          {/* Quick Status Filter: All / Still Inside / Completed */}
+          <div className="inline-flex items-center bg-secondary/80 p-0.5 rounded-lg border border-border text-xs shrink-0 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              className={cn(
+                'px-2.5 py-1 rounded-md transition-colors font-medium text-xs',
+                statusFilter === 'all'
+                  ? 'bg-card text-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              All ({pageData?.records?.length || 0})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('inside')}
+              className={cn(
+                'px-2.5 py-1 rounded-md transition-colors font-medium text-xs flex items-center gap-1.5',
+                statusFilter === 'inside'
+                  ? 'bg-card text-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--status-success)]" />
+              Still Inside ({insideCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('exited')}
+              className={cn(
+                'px-2.5 py-1 rounded-md transition-colors font-medium text-xs',
+                statusFilter === 'exited'
+                  ? 'bg-card text-foreground shadow-xs'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Completed ({exitedCount})
+            </button>
+          </div>
         </div>
 
         {/* Zone Filter & Page Size Selector */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end lg:self-auto">
           {selectedSite?.zones && selectedSite.zones.length > 0 && (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Filter className="h-3.5 w-3.5 hidden sm:block" />

@@ -83,4 +83,18 @@ describe('LoginPage Component', () => {
     // Password field should be erased
     expect(passwordInput.value).toBe('')
   })
+
+  it('renders "Welcome to the Crowd Management System" heading', () => {
+    act(() => {
+      root.render(
+        <MemoryRouter initialEntries={['/login']}>
+          <AuthProvider>
+            <LoginPage />
+          </AuthProvider>
+        </MemoryRouter>
+      )
+    })
+
+    expect(container.textContent).toContain('Welcome to the Crowd Management System')
+  })
 })

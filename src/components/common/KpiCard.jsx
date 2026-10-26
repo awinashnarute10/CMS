@@ -8,6 +8,7 @@ export function KpiCard({
   unit,
   subtitle,
   badge,
+  comparison,
   icon: Icon,
   isLoading = false,
   isError = false,
@@ -67,9 +68,23 @@ export function KpiCard({
               )}
             </div>
 
-            {(subtitle || badge) && (
+            {(subtitle || badge || comparison) && (
               <div className="mt-3 flex items-center gap-2 text-xs flex-wrap">
                 {badge}
+                {comparison && (
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1 font-mono font-medium px-1.5 py-0.5 rounded text-[10px]',
+                      comparison.trend === 'up'
+                        ? 'bg-[var(--status-success-bg)] text-[var(--status-success)] border border-[var(--status-success-border)]'
+                        : comparison.trend === 'down'
+                        ? 'bg-[var(--status-danger-bg)] text-[var(--status-danger)] border border-[var(--status-danger-border)]'
+                        : 'bg-secondary text-muted-foreground border border-border'
+                    )}
+                  >
+                    {comparison.delta || comparison.value}
+                  </span>
+                )}
                 {subtitle && (
                   <span className="text-muted-foreground truncate">
                     {subtitle}

@@ -53,6 +53,13 @@ describe('OverviewPage Component', () => {
       refetch: vi.fn(),
     })
 
+    vi.spyOn(useAnalyticsModule, 'useYesterdayFootfallQuery').mockReturnValue({
+      data: { footfall: 1000 },
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    })
+
     vi.spyOn(useAnalyticsModule, 'useDwellQuery').mockReturnValue({
       data: { avgDwellMinutes: 18.5, dwellRecords: 320 },
       isLoading: false,
@@ -93,9 +100,11 @@ describe('OverviewPage Component', () => {
     // Confirms dwell time formatting (18.5 min -> 18 min 30 secs)
     expect(container.textContent).toContain('18 min 30 secs')
 
-    // Confirms configured zones render properly with StatusBadge
-    expect(container.textContent).toContain('Main Reception & Lobby')
-    expect(container.textContent).toContain('Secure Datacenter Wing')
+    // Confirms footfall comparison indicator (+25% vs yesterday)
+    expect(container.textContent).toContain('+25% vs yesterday')
+
+    // Confirms Configured Zones section was removed as requested
+    expect(container.textContent).not.toContain('Configured Zones')
 
     // Confirms '3 Zones' badge and 'Monitoring...' subtitle were removed as requested
     expect(container.textContent).not.toContain('Monitoring CMS Innovation Center')

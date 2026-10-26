@@ -120,10 +120,10 @@ export function LoginPage() {
               <ShieldCheck className="h-5 w-5" />
             </div>
             <CardTitle className="text-xl font-semibold tracking-tight text-foreground">
-              Sign In to Operations
+              Welcome to the Crowd Management System
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground">
-              Enter your credentials to access the crowd management system.
+              Enter your credentials to access the operational dashboard.
             </CardDescription>
           </CardHeader>
 

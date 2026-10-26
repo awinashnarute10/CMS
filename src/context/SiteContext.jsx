@@ -3,7 +3,7 @@ import { useSitesQuery } from '@/hooks/useSites'
 import { useAuth } from '@/hooks/useAuth'
 
 const SITE_STORAGE_KEY = 'cms_selected_site_id'
-const DEFAULT_SITE_ID = 'site-001'
+const DEFAULT_SITE_ID = 'SITE-AE-DXB-001'
 
 const SiteContext = createContext({
   selectedSite: null,
@@ -19,7 +19,13 @@ export function SiteProvider({ children }) {
   const [realtimeOccupancy, setRealtimeOccupancy] = useState(null)
   const [explicitSiteId, setExplicitSiteId] = useState(() => {
     try {
-      return localStorage.getItem(SITE_STORAGE_KEY) || DEFAULT_SITE_ID
+      const stored = localStorage.getItem(SITE_STORAGE_KEY)
+      // Discard legacy fixture ID if stored
+      if (stored === 'site-001') {
+        localStorage.removeItem(SITE_STORAGE_KEY)
+        return DEFAULT_SITE_ID
+      }
+      return stored || DEFAULT_SITE_ID
     } catch {
       return DEFAULT_SITE_ID
     }
