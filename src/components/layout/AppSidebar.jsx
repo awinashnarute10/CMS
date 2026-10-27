@@ -1,14 +1,9 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { LayoutDashboard, Users, X, ChevronLeft, ChevronRight, LogOut } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/context/AuthContext'
-import { useSite } from '@/context/SiteContext'
-import { analyticsKeys } from '@/hooks/useAnalytics'
-import { computeRangeFromPreset } from '@/components/common/TimeRangeSelector'
-import { getEntryExitRecords, getOccupancyTimeSeries, getFootfall } from '@/api/analytics'
 
 const NAV_ITEMS = [
   {
@@ -40,8 +35,6 @@ export function AppSidebar({
 
   const location = useLocation()
   const navigate = useNavigate()
-  const { selectedSiteId } = useSite()
-  const queryClient = useQueryClient()
   const { logout } = useAuth()
 
   const handleLogout = () => {
@@ -60,55 +53,6 @@ export function AppSidebar({
       }
       return next
     })
-  }
-
-  const handlePrefetch = (path) => {
-    if (!selectedSiteId) return
-    const { fromUtc, toUtc } = computeRangeFromPreset('24h')
-
-    if (path === '/crowd-entries') {
-      queryClient.prefetchQuery({
-        queryKey: analyticsKeys.entryExit({
-          siteId: selectedSiteId,
-          fromUtc,
-          toUtc,
-          pageSize: 50,
-          pageNumber: 1,
-        }),
-        queryFn: ({ signal }) =>
-          getEntryExitRecords(
-            { siteId: selectedSiteId, fromUtc, toUtc, pageSize: 50, pageNumber: 1 },
-            { signal }
-          ),
-        staleTime: 1000 * 30,
-      })
-    } else if (path === '/overview') {
-      queryClient.prefetchQuery({
-        queryKey: analyticsKeys.occupancy({ siteId: selectedSiteId, fromUtc, toUtc }),
-        queryFn: ({ signal }) => getOccupancyTimeSeries({ siteId: selectedSiteId, fromUtc, toUtc }, { signal }),
-        staleTime: 1000 * 30,
-      })
-      queryClient.prefetchQuery({
-        queryKey: analyticsKeys.footfall({ siteId: selectedSiteId, period: 'today' }),
-        queryFn: ({ signal }) => {
-          const now = new Date()
-          const currentHourMs = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate(),
-            now.getHours(),
-            0,
-            0,
-            0
-          ).getTime()
-          return getFootfall(
-            { siteId: selectedSiteId, fromUtc: currentHourMs - 24 * 60 * 60 * 1000, toUtc: now.getTime() },
-            { signal }
-          )
-        },
-        staleTime: 1000 * 30,
-      })
-    }
   }
 
   return (
@@ -219,8 +163,6 @@ export function AppSidebar({
               <button
                 key={item.id}
                 type="button"
-                onMouseEnter={() => handlePrefetch(item.path)}
-                onFocus={() => handlePrefetch(item.path)}
                 onClick={() => {
                   navigate(item.path)
                   onCloseMobile?.()
